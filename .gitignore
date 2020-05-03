@@ -30,3 +30,16 @@
 *.exe
 *.out
 *.app
+
+# build
+build
+
+# profiling
+*calgrind.out.*
+
+# OSX
+.DS_Store
+
+# misc
+*.swp
+*.includecache
