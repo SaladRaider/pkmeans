@@ -11,18 +11,9 @@ void PKMeans<T>::run (int numClusters, int numBuckets, int numThreads,
             outFilename.c_str ());
 }
 
-template void PKMeans<unsigned int>::run (
-    int numClusters, int numBuckets, int numThreads, std::string inFilename,
-    std::string outFilename);
-
-template void PKMeans<unsigned long long>::run (
-    int numClusters, int numBuckets, int numThreads, std::string inFilename,
-    std::string outFilename);
-
-template void PKMeans<double>::run (
-    int numClusters, int numBuckets, int numThreads, std::string inFilename,
-    std::string outFilename);
-
-template void PKMeans<float>::run (
-    int numClusters, int numBuckets, int numThreads, std::string inFilename,
-    std::string outFilename);
+namespace pkmeans {
+    template class PKMeans<unsigned int>;
+    template class PKMeans<unsigned long long>;
+    template class PKMeans<double>;
+    template class PKMeans<float>;
+}
