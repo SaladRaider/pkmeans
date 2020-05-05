@@ -43,3 +43,4 @@ build
 # misc
 *.swp
 *.includecache
+distributions*
