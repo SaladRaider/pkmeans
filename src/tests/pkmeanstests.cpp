@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
-#include "../src/pkmeans.h"
+#include <pkmeans/pkmeans.h>
+
+using namespace pkmeans;
 
 class PKMeansTests : public ::testing::Test {
 protected:

@@ -1,29 +1,38 @@
-project(pkmeans)
 cmake_minimum_required(VERSION 3.5)
 
-add_compile_options(-D_FORTIFY_SOURCE=2 -D_GLBICXX_ASSERTIONS
-    -fasynchronous-unwind-tables -fexceptions -fpie -fpic -fstack-protector -g
-    -grecord-gcc-switches -O2 -pipe -std=c++17)
+project(pkmeans)
 
-add_definitions("-fPIC")
+cmake_policy(SET CMP0054 NEW)
+cmake_policy(SET CMP0079 NEW)
 
-enable_testing()
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-register")
+
+# Set up gtest. This must be set up before any subdirectories are
+# added which will use gtest.
 add_subdirectory(extern/googletest)
+find_library(gtest REQUIRED)
+include_directories(${GTEST_INCLUDE_DIRS})
+link_directories(${GTEST_LIBS_DIR})
+add_definitions("-fPIC")
+enable_testing()
 
-add_library(pkmeans_lib STATIC src/pkmeans.cpp)
+add_compile_options(-D_FORTIFY_SOURCE=2 -D_GLBICXX_ASSERTIONS
+    -fasynchronous-unwind-tables -fexceptions -fpie -fpic -fstack-protector -g -grecord-gcc-switches -O2 -pipe)
 
-add_executable(pkmeans_tests tests/pkmeanstests.cpp)
-target_link_libraries(pkmeans_tests PUBLIC
-    gtest_main
-    pkmeans_lib
-)
+#
+# set up boost
+#
+set(Boost_USE_STATIC_LIBS OFF)
+set(Boost_USE_MULTITHREADED ON)
+find_package(Boost COMPONENTS program_options REQUIRED)
+include_directories(${Boost_INCLUDE_DIR})
+link_directories(${Boost_LIBRARY_DIRS})
+message(STATUS "Boost Include: ${Boost_INCLUDE_DIR}")
+message(STATUS "Boost Libraries: ${Boost_LIBRARY_DIRS}")
+message(STATUS "Boost Libraries: ${Boost_LIBRARIES}")
 
-add_test(
-    NAME pkmeans_tests
-    COMMAND pkmeans_tests
-)
-
-include_directories(src)
-file(GLOB SOURCES src/*.h src/*.cpp)
-add_executable(pkmeans src/main.cpp src/pkmeans.cpp)
-target_compile_features(pkmeans PRIVATE cxx_lambda_init_captures)
+# Also search for includes in PROJECT_BINARY_DIR to find config.h.
+include_directories("${PROJECT_BINARY_DIR}")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+add_subdirectory(src)
