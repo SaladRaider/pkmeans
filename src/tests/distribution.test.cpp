@@ -62,8 +62,8 @@ protected:
     }
 
     static constexpr size_t numDistributions = 4;
-    std::array<Distribution<unsigned int>, numDistributions> distributions;
-    std::array<std::array<int, 50>, numDistributions> dummyBuckets;
+    std::array<Distribution<double>, numDistributions> distributions;
+    std::array<std::array<double, 50>, numDistributions> dummyBuckets;
 };
 
 TEST_F (DistributionTests, SizeTest) {
@@ -73,11 +73,139 @@ TEST_F (DistributionTests, SizeTest) {
 }
 
 TEST_F (DistributionTests, FillTest) {
-    int randVal = rand () % 100;
     for (size_t i = 0; i < distributions.size (); i++) {
+        double randVal = double(rand () % 100);
         distributions[i].fill (randVal);
         for (size_t j = 0; j < distributions[i].size (); j++) {
-            EXPECT_EQ (randVal, distributions[i][j]);
+            EXPECT_DOUBLE_EQ (randVal, distributions[i][j]);
         }
+    }
+}
+
+TEST_F (DistributionTests, ArithmeticTest) {
+    Distribution<double> sum;
+    sum = distributions[0] + distributions[1]
+        + distributions[2] + distributions[3];
+    ASSERT_EQ (distributions[0].size (), sum.size ());
+    for (size_t j = 0; j < distributions[0].size (); j++) {
+        double expectedVal = distributions[0][j] + distributions[1][j]
+            + distributions[2][j] + distributions[3][j];
+        EXPECT_DOUBLE_EQ (expectedVal, sum[j]);
+    }
+
+    sum.fill (0.0);
+    sum += distributions[0];
+    sum += distributions[1];
+    sum += distributions[2];
+    sum += distributions[3];
+    ASSERT_EQ (distributions[0].size (), sum.size ());
+    for (size_t j = 0; j < distributions[0].size (); j++) {
+        double expectedVal = distributions[0][j] + distributions[1][j]
+            + distributions[2][j] + distributions[3][j];
+        EXPECT_DOUBLE_EQ (expectedVal, sum[j]);
+    }
+
+    sum = distributions[0] - distributions[1] - distributions[2]
+        - distributions[3];
+    ASSERT_EQ (distributions[0].size (), sum.size ());
+    for (size_t j = 0; j < distributions[0].size (); j++) {
+        double expectedVal = distributions[0][j] - distributions[1][j]
+            - distributions[2][j] - distributions[3][j];
+        EXPECT_DOUBLE_EQ (expectedVal, sum[j]);
+    }
+
+    sum.fill (0.0);
+    sum -= distributions[0];
+    sum -= distributions[1];
+    sum -= distributions[2];
+    sum -= distributions[3];
+    ASSERT_EQ (distributions[0].size (), sum.size ());
+    for (size_t j = 0; j < distributions[0].size (); j++) {
+        double expectedVal = 0;
+        expectedVal = -distributions[0][j] - distributions[1][j]
+            - distributions[2][j] - distributions[3][j];
+        EXPECT_DOUBLE_EQ (expectedVal, sum[j]) << "sum[" << j << "]\n";
+    }
+
+    sum = distributions[0] * distributions[1] * distributions[2]
+        * distributions[3];
+    ASSERT_EQ (distributions[0].size (), sum.size ());
+    for (size_t j = 0; j < distributions[0].size (); j++) {
+        double expectedVal = distributions[0][j] * distributions[1][j]
+            * distributions[2][j] * distributions[3][j];
+        EXPECT_DOUBLE_EQ (expectedVal, sum[j]);
+    }
+
+    sum.fill (1.0);
+    sum *= distributions[0];
+    sum *= distributions[1];
+    sum *= distributions[2];
+    sum *= distributions[3];
+    ASSERT_EQ (distributions[0].size (), sum.size ());
+    for (size_t j = 0; j < distributions[0].size (); j++) {
+        double expectedVal = 0;
+        expectedVal = distributions[0][j] * distributions[1][j]
+            * distributions[2][j] * distributions[3][j];
+        EXPECT_DOUBLE_EQ (expectedVal, sum[j]) << "sum[" << j << "]\n";
+    }
+
+    sum = distributions[0] * 1.0 * distributions[1] * 2.0
+        * distributions[2] * 3.0 * distributions[3] * 4.0;
+    ASSERT_EQ (distributions[0].size (), sum.size ());
+    for (size_t j = 0; j < distributions[0].size (); j++) {
+        double expectedVal = distributions[0][j] * distributions[1][j]
+            * distributions[2][j] * distributions[3][j] * 24.0;
+        EXPECT_DOUBLE_EQ (expectedVal, sum[j]);
+    }
+
+    sum.fill (1.0);
+    sum *= 1.0;
+    sum *= 2.0;
+    sum *= 3.0;
+    sum *= 4.0;
+    ASSERT_EQ (distributions[0].size (), sum.size ());
+    for (size_t j = 0; j < distributions[0].size (); j++) {
+        EXPECT_DOUBLE_EQ (24.0, sum[j]) << "sum[" << j << "]\n";
+    }
+
+    sum = distributions[0] / distributions[1] / distributions[2]
+        / distributions[3];
+    ASSERT_EQ (distributions[0].size (), sum.size ());
+    for (size_t j = 0; j < distributions[0].size (); j++) {
+        double expectedVal = distributions[0][j] / distributions[1][j]
+            / distributions[2][j] / distributions[3][j];
+        EXPECT_DOUBLE_EQ (expectedVal, sum[j]);
+    }
+
+    sum.fill (1.0);
+    sum /= distributions[0];
+    sum /= distributions[1];
+    sum /= distributions[2];
+    sum /= distributions[3];
+    ASSERT_EQ (distributions[0].size (), sum.size ());
+    for (size_t j = 0; j < distributions[0].size (); j++) {
+        double expectedVal = 0;
+        expectedVal = 1.0 / distributions[0][j] / distributions[1][j]
+            / distributions[2][j] / distributions[3][j];
+        EXPECT_DOUBLE_EQ (expectedVal, sum[j]) << "sum[" << j << "]\n";
+    }
+
+    sum = distributions[0] / 1.0 / distributions[1] / 2.0
+        / distributions[2] / 3.0 / distributions[3] / 4.0;
+    ASSERT_EQ (distributions[0].size (), sum.size ());
+    for (size_t j = 0; j < distributions[0].size (); j++) {
+        double expectedVal = distributions[0][j] / distributions[1][j]
+            / distributions[2][j] / distributions[3][j] / 24.0;
+        EXPECT_DOUBLE_EQ (expectedVal, sum[j]);
+    }
+
+    sum.fill (1.0);
+    sum /= 1.0;
+    sum /= 2.0;
+    sum /= 3.0;
+    sum /= 4.0;
+    ASSERT_EQ (distributions[0].size (), sum.size ());
+    for (size_t j = 0; j < distributions[0].size (); j++) {
+        EXPECT_DOUBLE_EQ (1.0/24.0, sum[j]) << "sum[" << j << "]\n";
     }
 }

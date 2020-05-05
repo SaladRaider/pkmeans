@@ -27,8 +27,7 @@ struct Distribution {
 
         Distribution& operator= (const Distribution &other) {
             if (this != &other) {
-                std::copy (other.buckets.begin (), other.buckets.end (),
-                           std::back_inserter (buckets));
+                buckets = other.buckets;
             }
             return *this;
         }
@@ -43,6 +42,34 @@ struct Distribution {
         Distribution& operator-= (const Distribution &other) {
             for (size_t i = 0; i < size (); i++) {
                 buckets[i] -= other.buckets[i];
+            }
+            return *this;
+        };
+
+        Distribution& operator*= (const Distribution &other) {
+            for (size_t i = 0; i < size (); i++) {
+                buckets[i] *= other.buckets[i];
+            }
+            return *this;
+        };
+
+        Distribution& operator*= (const T &rhs) {
+            for (size_t i = 0; i < size (); i++) {
+                buckets[i] *= rhs;
+            }
+            return *this;
+        };
+
+        Distribution& operator/= (const Distribution &other) {
+            for (size_t i = 0; i < size (); i++) {
+                buckets[i] /= other.buckets[i];
+            }
+            return *this;
+        };
+
+        Distribution& operator/= (const T &rhs) {
+            for (size_t i = 0; i < size (); i++) {
+                buckets[i] /= rhs;
             }
             return *this;
         };
@@ -68,6 +95,44 @@ struct Distribution {
         friend Distribution operator- (Distribution lhs, const Distribution &rhs) {
             lhs -= rhs;
             return lhs;
+        };
+
+        friend Distribution operator* (Distribution lhs, const Distribution &rhs) {
+            lhs *= rhs;
+            return lhs;
+        };
+
+        friend Distribution operator* (Distribution lhs, const T &rhs) {
+            for (size_t i = 0; i < lhs.size (); i++) {
+                lhs.buckets[i] *= rhs;
+            }
+            return lhs;
+        };
+
+        friend Distribution operator* (const T &lhs, Distribution rhs) {
+            for (size_t i = 0; i < rhs.size (); i++) {
+                rhs.buckets[i] *= lhs;
+            }
+            return rhs;
+        };
+
+        friend Distribution operator/ (Distribution lhs, const Distribution &rhs) {
+            lhs /= rhs;
+            return lhs;
+        };
+
+        friend Distribution operator/ (Distribution lhs, const T &rhs) {
+            for (size_t i = 0; i < lhs.size (); i++) {
+                lhs.buckets[i] /= rhs;
+            }
+            return lhs;
+        };
+
+        friend Distribution operator/ (const T &lhs, Distribution rhs) {
+            for (size_t i = 0; i < rhs.size (); i++) {
+                rhs.buckets[i] /= lhs;
+            }
+            return rhs;
         };
 
         static unsigned int emd (const Distribution &d1, const Distribution &d2) {
