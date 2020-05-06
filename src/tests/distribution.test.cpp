@@ -72,7 +72,7 @@ TEST_F (DistributionTests, SizeTest) {
     }
 }
 
-TEST_F (DistributionTests, FillTest) {
+TEST_F (DistributionTests, Fill) {
     for (size_t i = 0; i < distributions.size (); i++) {
         double randVal = double(rand () % 100);
         distributions[i].fill (randVal);
@@ -82,7 +82,7 @@ TEST_F (DistributionTests, FillTest) {
     }
 }
 
-TEST_F (DistributionTests, ArithmeticTest) {
+TEST_F (DistributionTests, Addition) {
     Distribution<double> sum;
     sum = distributions[0] + distributions[1]
         + distributions[2] + distributions[3];
@@ -104,7 +104,10 @@ TEST_F (DistributionTests, ArithmeticTest) {
             + distributions[2][j] + distributions[3][j];
         EXPECT_DOUBLE_EQ (expectedVal, sum[j]);
     }
+}
 
+TEST_F (DistributionTests, Subtraction) {
+    Distribution<double> sum;
     sum = distributions[0] - distributions[1] - distributions[2]
         - distributions[3];
     ASSERT_EQ (distributions[0].size (), sum.size ());
@@ -126,7 +129,10 @@ TEST_F (DistributionTests, ArithmeticTest) {
             - distributions[2][j] - distributions[3][j];
         EXPECT_DOUBLE_EQ (expectedVal, sum[j]) << "sum[" << j << "]\n";
     }
+}
 
+TEST_F (DistributionTests, Multiplication) {
+    Distribution<double> sum;
     sum = distributions[0] * distributions[1] * distributions[2]
         * distributions[3];
     ASSERT_EQ (distributions[0].size (), sum.size ());
@@ -167,7 +173,10 @@ TEST_F (DistributionTests, ArithmeticTest) {
     for (size_t j = 0; j < distributions[0].size (); j++) {
         EXPECT_DOUBLE_EQ (24.0, sum[j]) << "sum[" << j << "]\n";
     }
+}
 
+TEST_F (DistributionTests, Division) {
+    Distribution<double> sum;
     sum = distributions[0] / distributions[1] / distributions[2]
         / distributions[3];
     ASSERT_EQ (distributions[0].size (), sum.size ());
@@ -207,5 +216,52 @@ TEST_F (DistributionTests, ArithmeticTest) {
     ASSERT_EQ (distributions[0].size (), sum.size ());
     for (size_t j = 0; j < distributions[0].size (); j++) {
         EXPECT_DOUBLE_EQ (1.0/24.0, sum[j]) << "sum[" << j << "]\n";
+    }
+}
+
+TEST_F (DistributionTests, EMD) {
+    std::array<std::array<double, numDistributions>, numDistributions> distMatrix;
+    for (size_t i = 0; i < distMatrix.size (); i++)
+    for (size_t j = 0; j < distMatrix[i].size (); j++) {
+        distMatrix[i][j] = Distribution<double>::emd(distributions[i], distributions[j]);
+    }
+
+    // test if diagonal entries are 0
+    for (size_t i = 0; i < distMatrix.size (); i++) {
+        ASSERT_DOUBLE_EQ(0.0, distMatrix[i][i])
+            << '(' << i << ',' << i << ") is non-zero.\n";
+    }
+
+    // test if matrix is symmetric and entries are non-negative
+    for (size_t i = 0; i < distMatrix.size (); i++)
+    for (size_t j = i; j < distMatrix[i].size (); j++) {
+        ASSERT_GE(distMatrix[i][j], 0.0)
+            << '(' << i << ',' << j << ") is negative.\n";
+        ASSERT_DOUBLE_EQ(distMatrix[j][i], distMatrix[i][j])
+            << '(' << i << ',' << j << ") is not symmetric.\n";
+    }
+
+    // test if triangle inequality is satisified
+    double a, b, c;
+    for (size_t i = 0; i < distMatrix.size (); i++)
+    for (size_t j = 0; j < distMatrix.size (); j++)
+    if (j != i)
+    for (size_t k = j+1; k < distMatrix.size (); k++)
+    if (k != i) {
+        a = distMatrix[i][j];
+        b = distMatrix[i][k];
+        c = distMatrix[j][k];
+        ASSERT_GE(a + b, c)
+            << '(' << i << ',' << j << ',' << k
+            << ") (a:" << a << ",b:" << b << ",c:" << c
+            << ") triangle inequality not satisfied.\n";
+        ASSERT_GE(a + c, b)
+            << '(' << i << ',' << j << ',' << k
+            << ") (a:" << a << ",b:" << b << ",c:" << c
+            << ") triangle inequality not satisfied.\n";
+        ASSERT_GE(b + c, a)
+            << '(' << i << ',' << j << ',' << k
+            << ") (a:" << a << ",b:" << b << ",c:" << c
+            << ") triangle inequality not satisfied.\n";
     }
 }

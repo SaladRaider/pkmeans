@@ -29,15 +29,9 @@ protected:
         // before the destructor).
     }
 
-    PKMeans<unsigned int> pkmeans1;
-    PKMeans<unsigned long long> pkmeans2;
-    PKMeans<double> pkmeans3;
-    PKMeans<double> pkmeans4;
+    PKMeans pkmeans;
 };
 
 TEST_F (PKMeansTests, Run) {
-    pkmeans1.run (10, 50, 32, "in.txt", "out.txt");
-    pkmeans2.run (10, 50, 32, "in.txt", "out.txt");
-    pkmeans3.run (10, 50, 32, "in.txt", "out.txt");
-    pkmeans4.run (10, 50, 32, "in.txt", "out.txt");
+    pkmeans.run (10, 32, "in.txt", "out.txt");
 }

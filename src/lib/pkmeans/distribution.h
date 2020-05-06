@@ -4,6 +4,7 @@
 #include <vector>
 #include <sstream>
 #include <algorithm>
+#include <tgmath.h>
 
 namespace pkmeans {
 template <class T>
@@ -18,10 +19,22 @@ struct Distribution {
         };
 
         void fill (T value) {
-            std::fill (buckets.begin(), buckets.end(), value);
+            std::fill (buckets.begin (), buckets.end (), value);
         };
 
+        T sum () const {
+            T retSum = 0;
+            for (size_t i = 0; i < size (); i++) {
+                retSum += buckets[i];
+            }
+            return retSum;
+        }
+
         T& operator[] (size_t idx) {
+            return buckets[idx];
+        };
+
+        const T& operator[] (size_t idx) const {
             return buckets[idx];
         };
 
@@ -74,6 +87,20 @@ struct Distribution {
             return *this;
         };
 
+        friend bool operator== (const Distribution &lhs, const Distribution &rhs) {
+            if (lhs.size () != rhs.size ())
+                return false;
+            for (size_t i = 0; i < lhs.size (); i++) {
+                if (lhs[i] != rhs[i])
+                    return false;
+            }
+            return true;
+        }
+
+        friend bool operator!= (const Distribution &lhs, const Distribution &rhs) {
+            return !(lhs == rhs);
+        }
+
         friend std::istream& operator>> (std::istream &is, Distribution &obj) {
             T tempVal;
             std::string buf;
@@ -85,6 +112,14 @@ struct Distribution {
                 obj.buckets.push_back(tempVal);
             }
             return is;
+        };
+
+        friend std::ostream& operator<< (std::ostream &os, const Distribution &obj) {
+            for (size_t i = 0; i < obj.buckets.size() - 1; i++) {
+                os << obj.buckets[i] << ' ';
+            }
+            os << obj.buckets[obj.buckets.size() - 1];
+            return os;
         };
 
         friend Distribution operator+ (Distribution lhs, const Distribution &rhs) {
@@ -135,8 +170,12 @@ struct Distribution {
             return rhs;
         };
 
-        static unsigned int emd (const Distribution &d1, const Distribution &d2) {
-            return 0;
+        static double emd (const Distribution &d1, const Distribution &d2) {
+            Distribution emdDistribution = d1 - d2;
+            for (size_t i = 1; i < emdDistribution.size (); i++) {
+                emdDistribution[i] += emdDistribution[i - 1];
+            }
+            return fabs(emdDistribution.sum());
         };
 };
 }

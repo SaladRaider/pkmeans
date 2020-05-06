@@ -5,12 +5,24 @@
 #include <pkmeans/distribution.h>
 
 namespace pkmeans {
-template <class T>
 class PKMeans {
     private:
-        std::vector<Distribution<T>> clusters;
+        std::vector<Distribution<double>> clusters;
+        std::vector<Distribution<double>> distributions;
+        std::vector<std::vector<size_t>> clusterAssignments;
+        bool converged;
+
+        void readDistributions (std::string inFileName);
+        void saveClusters (std::string outFilename);
+        void saveAssignments (std::string outFilename);
+        void initClusters (int numClusters);
+        void clearClusterAssignments ();
+        void assignDistributions ();
+        void computeNewClusters ();
+        void computeClusterMean (size_t idx, Distribution<double> &cluster);
+        size_t findClosestCluster (size_t distributionIdx);
     public:
-        void run (int numClusters, int numBuckets, int numThreads, std::string inFilename,
+        void run (int numClusters, int numThreads, std::string inFilename,
                   std::string outFilename);
 };
 }
