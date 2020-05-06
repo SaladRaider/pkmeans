@@ -10,23 +10,25 @@ void PKMeans::run (int numClusters, int numThreads, std::string inFilename, std:
             numClusters, numThreads, inFilename.c_str (),
             outFilename.c_str ());
 
+    unsigned int numIterations = 0;
     readDistributions (inFilename);
     initClusters (numClusters);
     while (!converged) {
         assignDistributions ();
         computeNewClusters ();
+        numIterations += 1;
     }
-    saveClusters (outFilename);
+    saveAssignments (outFilename);
 
-    printf ("pkmeans finished running.");
+    printf ("pkmeans finished running with %u iterations.\n", numIterations);
 }
 
 void PKMeans::readDistributions (std::string inFilename) {
     std::ifstream infile;
     std::string fileBuffer;
     infile.open (inFilename);
-    Distribution<double> newDistribution;
     while (infile) {
+        Distribution<double> newDistribution;
         if (!(infile >> newDistribution))
             break;
         distributions.emplace_back (newDistribution);

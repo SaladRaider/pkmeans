@@ -10,7 +10,7 @@ class PKMeans {
         std::vector<Distribution<double>> clusters;
         std::vector<Distribution<double>> distributions;
         std::vector<std::vector<size_t>> clusterAssignments;
-        bool converged;
+        bool converged = false;
 
         void readDistributions (std::string inFileName);
         void saveClusters (std::string outFilename);
