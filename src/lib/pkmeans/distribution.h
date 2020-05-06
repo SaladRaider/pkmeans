@@ -33,7 +33,7 @@ struct Distribution {
         T absSum () const {
             T retSum = 0;
             for (size_t i = 0; i < size (); i++) {
-                retSum += fabs(buckets[i]);
+                retSum += fabs (buckets[i]);
             }
             return retSum;
         }
@@ -117,16 +117,16 @@ struct Distribution {
             while (iss) {
                 if (!(iss >> tempVal))
                     break;
-                obj.buckets.push_back(tempVal);
+                obj.buckets.push_back (tempVal);
             }
             return is;
         };
 
         friend std::ostream& operator<< (std::ostream &os, const Distribution &obj) {
-            for (size_t i = 0; i < obj.buckets.size() - 1; i++) {
+            for (size_t i = 0; i < obj.buckets.size () - 1; i++) {
                 os << obj.buckets[i] << ' ';
             }
-            os << obj.buckets[obj.buckets.size() - 1];
+            os << obj.buckets[obj.buckets.size () - 1];
             return os;
         };
 
@@ -183,7 +183,7 @@ struct Distribution {
             for (size_t i = 1; i < emdDistribution.size (); i++) {
                 emdDistribution[i] += emdDistribution[i - 1];
             }
-            return emdDistribution.absSum();
+            return emdDistribution.absSum ();
         };
 };
 }

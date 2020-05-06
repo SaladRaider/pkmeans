@@ -5,10 +5,13 @@
 
 using namespace pkmeans;
 
-void PKMeans::run (int numClusters, int numThreads, std::string inFilename, std::string outFilename) {
-    printf ("Running pkmeans with args (k=%d, t=%d, i=%s, o=%s)\n",
+void PKMeans::run (int numClusters, int numThreads,
+                   std::string inFilename,
+                   std::string assignmentsOut,
+                   std::string clustersOut) {
+    printf ("Running pkmeans with args (k=%d, t=%d, i=%s, a=%s, c=%s)\n",
             numClusters, numThreads, inFilename.c_str (),
-            outFilename.c_str ());
+            assignmentsOut.c_str (), clustersOut.c_str());
 
     unsigned int numIterations = 0;
     readDistributions (inFilename);
@@ -19,7 +22,8 @@ void PKMeans::run (int numClusters, int numThreads, std::string inFilename, std:
         assignDistributions ();
         numIterations += 1;
     }
-    saveAssignments (outFilename);
+    saveAssignments (assignmentsOut);
+    saveClusters (clustersOut);
 
     printf ("pkmeans finished running with %u iterations.\n", numIterations);
 }
@@ -60,14 +64,14 @@ void PKMeans::saveAssignments (std::string outFilename) {
 
 void PKMeans::initClusters (int numClusters) {
     size_t k = size_t (numClusters);
-    std::unordered_set<size_t> takendIdxs;
+    std::unordered_set<size_t> takenIdxs;
     size_t randIdx = size_t (rand () % int(distributions.size ()));
     clusterAssignments.clear ();
     for (size_t i = 0; i < k; i++) {
-        while (takendIdxs.find (randIdx) != takendIdxs.end ()) {
+        while (takenIdxs.find (randIdx) != takenIdxs.end ()) {
             randIdx = size_t (rand () % int(distributions.size ()));
         }
-        takendIdxs.insert (randIdx);
+        takenIdxs.insert (randIdx);
         clusters.emplace_back (distributions[randIdx]);
         clusterAssignments.emplace_back ();
     }

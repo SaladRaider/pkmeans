@@ -35,7 +35,7 @@ class PKMeans {
         FRIEND_TEST (PKMeansTests, ComputeNewClusters);
     public:
         void run (int numClusters, int numThreads, std::string inFilename,
-                  std::string outFilename);
+                  std::string assignmentsOutFilename, std::string clustersOutFilename);
 };
 }
 
