@@ -37,7 +37,7 @@ void PKMeans::readDistributions (std::string inFilename) {
         if (!(infile >> newDistribution))
             break;
         distributions.emplace_back (newDistribution);
-        prevClusterAssignments.emplace_back (size_t(-1));
+        prevClusterAssignments.emplace_back (size_t (-1));
     }
     infile.close ();
 }

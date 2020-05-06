@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
     std::string clustersOut = vm["clusters_out"].as<std::string> ();
 
     // set rand seed
-    srand ( time (NULL));
+    srand (time (NULL));
 
     PKMeans pkmeans;
     pkmeans.run (numClusters, numThreads, inFilename,
