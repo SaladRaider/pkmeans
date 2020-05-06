@@ -13,9 +13,10 @@ void PKMeans::run (int numClusters, int numThreads, std::string inFilename, std:
     unsigned int numIterations = 0;
     readDistributions (inFilename);
     initClusters (numClusters);
+    assignDistributions ();
     while (!converged) {
-        assignDistributions ();
         computeNewClusters ();
+        assignDistributions ();
         numIterations += 1;
     }
     saveAssignments (outFilename);
@@ -32,6 +33,7 @@ void PKMeans::readDistributions (std::string inFilename) {
         if (!(infile >> newDistribution))
             break;
         distributions.emplace_back (newDistribution);
+        prevClusterAssignments.emplace_back (size_t(-1));
     }
     infile.close ();
 }
@@ -60,6 +62,7 @@ void PKMeans::initClusters (int numClusters) {
     size_t k = size_t (numClusters);
     std::unordered_set<size_t> takendIdxs;
     size_t randIdx = size_t (rand () % int(distributions.size ()));
+    clusterAssignments.clear ();
     for (size_t i = 0; i < k; i++) {
         while (takendIdxs.find (randIdx) != takendIdxs.end ()) {
             randIdx = size_t (rand () % int(distributions.size ()));
@@ -93,14 +96,21 @@ size_t PKMeans::findClosestCluster (size_t distributionIdx) {
 }
 
 void PKMeans::assignDistributions () {
+    converged = true;
     clearClusterAssignments ();
     size_t closestClusterIdx;
     for (size_t i = 0; i < distributions.size (); i++) {
-        clusterAssignments[findClosestCluster (i)].emplace_back (i);
+        closestClusterIdx = findClosestCluster (i);
+        clusterAssignments[closestClusterIdx].emplace_back (i);
+        if (closestClusterIdx != prevClusterAssignments[i]) {
+            converged = false;
+            prevClusterAssignments[i] = closestClusterIdx;
+        }
     }
 }
 
 void PKMeans::computeClusterMean (size_t idx, Distribution<double> &cluster) {
+    cluster = distributions[0];
     cluster.fill (0.0);
     for (size_t i = 0; i < clusterAssignments[idx].size (); i++) {
         cluster += distributions [clusterAssignments [idx][i]];
@@ -110,13 +120,9 @@ void PKMeans::computeClusterMean (size_t idx, Distribution<double> &cluster) {
 
 void PKMeans::computeNewClusters () {
     Distribution<double> newCluster;
-    converged = true;
     for (size_t i = 0; i < clusters.size (); i++) {
         computeClusterMean (i, newCluster);
-        if (clusters[i] != newCluster) {
-            clusters[i] = newCluster;
-            converged = false;
-        }
+        clusters[i] = newCluster;
     }
 }
 

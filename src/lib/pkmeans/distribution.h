@@ -30,6 +30,14 @@ struct Distribution {
             return retSum;
         }
 
+        T absSum () const {
+            T retSum = 0;
+            for (size_t i = 0; i < size (); i++) {
+                retSum += fabs(buckets[i]);
+            }
+            return retSum;
+        }
+
         T& operator[] (size_t idx) {
             return buckets[idx];
         };
@@ -175,7 +183,7 @@ struct Distribution {
             for (size_t i = 1; i < emdDistribution.size (); i++) {
                 emdDistribution[i] += emdDistribution[i - 1];
             }
-            return fabs(emdDistribution.sum());
+            return emdDistribution.absSum();
         };
 };
 }

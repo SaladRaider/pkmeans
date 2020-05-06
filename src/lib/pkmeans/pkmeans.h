@@ -1,8 +1,9 @@
 #ifndef __PKMEANS_H_INCLUDED_
 #define __PKMEANS_H_INCLUDED_
 
-#include <string>
+#include <gtest/gtest.h>
 #include <pkmeans/distribution.h>
+#include <string>
 
 namespace pkmeans {
 class PKMeans {
@@ -10,6 +11,7 @@ class PKMeans {
         std::vector<Distribution<double>> clusters;
         std::vector<Distribution<double>> distributions;
         std::vector<std::vector<size_t>> clusterAssignments;
+        std::vector<size_t> prevClusterAssignments;
         bool converged = false;
 
         void readDistributions (std::string inFileName);
@@ -21,6 +23,16 @@ class PKMeans {
         void computeNewClusters ();
         void computeClusterMean (size_t idx, Distribution<double> &cluster);
         size_t findClosestCluster (size_t distributionIdx);
+
+        // test friend functions
+        friend class PKMeansTests;
+        FRIEND_TEST (PKMeansTests, ReadDistributions);
+        FRIEND_TEST (PKMeansTests, InitClusters);
+        FRIEND_TEST (PKMeansTests, FindClosestCluster);
+        FRIEND_TEST (PKMeansTests, AssignDistributions);
+        FRIEND_TEST (PKMeansTests, ClearClusterAssignments);
+        FRIEND_TEST (PKMeansTests, ComputeClusterMean);
+        FRIEND_TEST (PKMeansTests, ComputeNewClusters);
     public:
         void run (int numClusters, int numThreads, std::string inFilename,
                   std::string outFilename);

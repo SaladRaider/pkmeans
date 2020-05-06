@@ -15,7 +15,6 @@ protected:
     DistributionTests () {
         srand (time (NULL));
 
-        // You can do set-up work for each test here.
         // Initialize random distributions
         for (size_t j = 0; j < 4; j++)
         for (size_t i = 0; i < 50; i++) {
@@ -24,7 +23,7 @@ protected:
 
         // Create test distribution file
         std::ofstream f;
-        f.open("test_distribution.txt");
+        f.open ("test_distribution.txt");
         for (size_t j = 0; j < 4; j++)
         for (size_t i = 0; i < dummyBuckets.size (); i++) {
             for (size_t j = 0; j < 49; j++) {
@@ -46,7 +45,8 @@ protected:
 
     virtual ~DistributionTests () {
         // You can do clean-up work that doesn't throw exceptions here.
-        std::remove ("test_dummyBuckets.txt");
+        if ((std::remove ("test_distribution.txt")) != 0)
+            printf ("Could not remove test_distribution.txt\n");
     }
 
     // If the constructor and destructor are not enough for setting up
