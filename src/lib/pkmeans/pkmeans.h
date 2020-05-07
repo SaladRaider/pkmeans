@@ -21,7 +21,8 @@ class PKMeans {
         void clearClusterAssignments ();
         void assignDistributions ();
         void computeNewClusters ();
-        void computeClusterMean (size_t idx, Distribution<double> &cluster);
+        void computeClusterMean (size_t idx);
+        double calcObjFn ();
         size_t findClosestCluster (size_t distributionIdx);
 
         // test friend functions
@@ -33,6 +34,7 @@ class PKMeans {
         FRIEND_TEST (PKMeansTests, ClearClusterAssignments);
         FRIEND_TEST (PKMeansTests, ComputeClusterMean);
         FRIEND_TEST (PKMeansTests, ComputeNewClusters);
+        FRIEND_TEST (PKMeansTests, CalcObjFn);
     public:
         void run (int numClusters, int numThreads, std::string inFilename,
                   std::string assignmentsOutFilename, std::string clustersOutFilename);

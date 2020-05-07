@@ -13,13 +13,16 @@ void PKMeans::run (int numClusters, int numThreads,
             numClusters, numThreads, inFilename.c_str (),
             assignmentsOut.c_str (), clustersOut.c_str());
 
-    unsigned int numIterations = 0;
+    unsigned int numIterations = 1;
     readDistributions (inFilename);
     initClusters (numClusters);
     assignDistributions ();
+    printf ("Error is %f\n", calcObjFn ());
+    computeNewClusters ();
     while (!converged) {
-        computeNewClusters ();
         assignDistributions ();
+        printf ("Error is %f\n", calcObjFn ());
+        computeNewClusters ();
         numIterations += 1;
     }
     saveAssignments (assignmentsOut);
@@ -90,7 +93,7 @@ size_t PKMeans::findClosestCluster (size_t distributionIdx) {
     double newDist;
     for (size_t i = 1; i < clusters.size (); i++) {
         newDist = Distribution<double>::emd (distributions[distributionIdx],
-                                              clusters[i]);
+                                             clusters[i]);
         if (newDist < dist) {
             closestIdx = i;
             dist = newDist;
@@ -113,20 +116,30 @@ void PKMeans::assignDistributions () {
     }
 }
 
-void PKMeans::computeClusterMean (size_t idx, Distribution<double> &cluster) {
-    cluster = distributions[0];
-    cluster.fill (0.0);
+void PKMeans::computeClusterMean (size_t idx) {
+    clusters[idx].fill (0.0);
     for (size_t i = 0; i < clusterAssignments[idx].size (); i++) {
-        cluster += distributions [clusterAssignments [idx][i]];
+        clusters[idx] += distributions [clusterAssignments [idx][i]];
     }
-    cluster /= double(clusterAssignments[idx].size ());
+    clusters[idx] /= double(clusterAssignments[idx].size ());
 }
 
 void PKMeans::computeNewClusters () {
-    Distribution<double> newCluster;
     for (size_t i = 0; i < clusters.size (); i++) {
-        computeClusterMean (i, newCluster);
-        clusters[i] = newCluster;
+        computeClusterMean (i);
     }
+}
+
+double PKMeans::calcObjFn () {
+    double sum = 0.0;
+    double dist = 0.0;
+    for (size_t i = 0; i < clusterAssignments.size (); i++)
+    for (size_t j = 0; j < clusterAssignments[i].size (); j++) {
+        dist = Distribution<double>::emd (
+            clusters[i], distributions [clusterAssignments[i][j]]
+        );
+        sum += dist;
+    }
+    return sum;
 }
 
