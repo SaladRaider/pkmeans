@@ -73,7 +73,6 @@ void PKMeans::initClusters (int numClusters) {
     Distribution<double> weightedP;
 
     weightedP.fill (0.0, distributions.size ());
-    clusterAssignments.clear ();
 
     // pick random 1st cluster
     clusters.emplace_back (distributions[distIdx]);
