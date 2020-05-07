@@ -66,17 +66,44 @@ void PKMeans::saveAssignments (std::string outFilename) {
 }
 
 void PKMeans::initClusters (int numClusters) {
-    size_t k = size_t (numClusters);
-    std::unordered_set<size_t> takenIdxs;
-    size_t randIdx = size_t (rand () % int(distributions.size ()));
-    clusterAssignments.clear ();
-    for (size_t i = 0; i < k; i++) {
-        while (takenIdxs.find (randIdx) != takenIdxs.end ()) {
-            randIdx = size_t (rand () % int(distributions.size ()));
+    size_t kMax = size_t (numClusters);
+    size_t distIdx = size_t (rand () % int(distributions.size ()));
+    double p;
+    double pSum;
+    Distribution<double> weightedP;
+
+    weightedP.fill (0.0, distributions.size ());
+
+    // pick random 1st cluster
+    clusters.emplace_back (distributions[distIdx]);
+    clusterAssignments.emplace_back ();
+
+    for (size_t k = 1; k < kMax; k++) {
+        assignDistributions ();
+
+        // calculate weighted probabillities
+        for (size_t i = 0; i < clusterAssignments.size (); i++)
+        for (size_t j = 0; j < clusterAssignments[i].size (); j++) {
+            distIdx = clusterAssignments [i][j];
+            weightedP[distIdx] = Distribution<double>::emd (
+                distributions[distIdx],
+                clusters[i]
+            );
         }
-        takenIdxs.insert (randIdx);
-        clusters.emplace_back (distributions[randIdx]);
-        clusterAssignments.emplace_back ();
+        weightedP *= weightedP;
+        weightedP /= weightedP.sum ();
+
+        // select new cluster based on weighted probabillites
+        p = double (rand ()) / double (RAND_MAX);
+        pSum = 0.0;
+        for (size_t i = 0; i < distributions.size (); i++) {
+            pSum += weightedP[i];
+            if (pSum >= p) {
+                clusters.emplace_back (distributions[i]);
+                clusterAssignments.emplace_back ();
+                break;
+            }
+        }
     }
 }
 

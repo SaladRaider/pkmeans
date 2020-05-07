@@ -22,6 +22,12 @@ struct Distribution {
             std::fill (buckets.begin (), buckets.end (), value);
         };
 
+        void fill (T value, size_t N) {
+            buckets.clear ();
+            for (size_t i = 0; i < N; i++)
+                buckets.emplace_back (value);
+        };
+
         T sum () const {
             T retSum = 0;
             for (size_t i = 0; i < size (); i++) {
