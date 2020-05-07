@@ -206,15 +206,14 @@ TEST_F (PKMeansTests, ComputeClusterMean) {
 
     pkmeans.assignDistributions ();
 
-    Distribution<double> newDist;
-    pkmeans.computeClusterMean (0, newDist);
+    pkmeans.computeClusterMean (0);
     EXPECT_TRUE (
         (pkmeans.distributions[0] + pkmeans.distributions[1]) / 2.0
-            == newDist);
-    pkmeans.computeClusterMean (1, newDist);
+            == pkmeans.clusters[0]);
+    pkmeans.computeClusterMean (1);
     EXPECT_TRUE (
         (pkmeans.distributions[2] + pkmeans.distributions[3]) / 2.0
-                == newDist);
+                == pkmeans.clusters[1]);
 }
 
 TEST_F (PKMeansTests, ComputeNewClusters) {
@@ -249,5 +248,41 @@ TEST_F (PKMeansTests, ComputeNewClusters) {
                 == pkmeans.clusters[1]);
 }
 
+TEST_F (PKMeansTests, CalcObjFn) {
+    for (size_t i = 0; i < pkmeans.distributions.size (); i++) {
+        pkmeans.distributions[i].fill (0.0);
+    }
+    pkmeans.distributions[0][0] = 1.0;
+    pkmeans.distributions[0][49] = 1.0;
+    pkmeans.distributions[1][1] = 1.0;
+    pkmeans.distributions[1][48] = 1.0;
+    pkmeans.distributions[2][24] = 1.0;
+    pkmeans.distributions[2][25] = 1.0;
+    pkmeans.distributions[3][20] = 1.0;
+    pkmeans.distributions[3][30] = 1.0;
+
+    pkmeans.initClusters (2);
+    pkmeans.clusters[0].fill (0.0);
+    pkmeans.clusters[1].fill (0.0);
+    pkmeans.clusters[0][0] = 1.0;
+    pkmeans.clusters[0][49] = 1.0;
+    pkmeans.clusters[1][23] = 1.0;
+    pkmeans.clusters[1][22] = 1.0;
+
+    pkmeans.assignDistributions ();
+
+    EXPECT_DOUBLE_EQ (15.0, pkmeans.calcObjFn ());
+
+    pkmeans.clusters[0].fill (0.0);
+    pkmeans.clusters[1].fill (0.0);
+    pkmeans.clusters[0][2] = 1.0;
+    pkmeans.clusters[0][47] = 1.0;
+    pkmeans.clusters[1][24] = 1.0;
+    pkmeans.clusters[1][21] = 1.0;
+
+    pkmeans.assignDistributions ();
+
+    EXPECT_DOUBLE_EQ (17.0, pkmeans.calcObjFn ());
+}
 
 }
