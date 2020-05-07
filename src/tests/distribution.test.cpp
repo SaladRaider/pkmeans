@@ -82,6 +82,29 @@ TEST_F (DistributionTests, Fill) {
     }
 }
 
+TEST_F (DistributionTests, FillN) {
+    for (size_t i = 0; i < distributions.size (); i++) {
+        double randVal = double(rand () % 100);
+        distributions[i].fill (randVal, 50);
+        EXPECT_DOUBLE_EQ (50, distributions[i].size ());
+        for (size_t j = 0; j < distributions[i].size (); j++) {
+            EXPECT_DOUBLE_EQ (randVal, distributions[i][j]);
+        }
+
+        distributions[i].fill (randVal, 100);
+        EXPECT_DOUBLE_EQ (100, distributions[i].size ());
+        for (size_t j = 0; j < distributions[i].size (); j++) {
+            EXPECT_DOUBLE_EQ (randVal, distributions[i][j]);
+        }
+
+        distributions[i].fill (randVal, 5);
+        EXPECT_DOUBLE_EQ (5, distributions[i].size ());
+        for (size_t j = 0; j < distributions[i].size (); j++) {
+            EXPECT_DOUBLE_EQ (randVal, distributions[i][j]);
+        }
+    }
+}
+
 TEST_F (DistributionTests, Addition) {
     Distribution<double> sum;
     sum = distributions[0] + distributions[1]
