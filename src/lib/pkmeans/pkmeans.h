@@ -9,21 +9,48 @@ namespace pkmeans {
 class PKMeans {
     private:
         std::vector<Distribution<double>> clusters;
+        std::vector<Distribution<double>> newClusters;
         std::vector<Distribution<double>> distributions;
         std::vector<std::vector<size_t>> clusterAssignments;
         std::vector<size_t> prevClusterAssignments;
+        std::vector<std::vector<double>> lowerBounds;
+        std::vector<double> upperBounds;
+        std::vector<std::vector<double>> clusterDists;
+        std::vector<std::vector<double>> clusterDistributionDists;
+        std::vector<double> sDists;
+        std::vector<double> r;
         bool converged = false;
 
         void readDistributions (std::string inFileName);
         void saveClusters (std::string outFilename);
         void saveAssignments (std::string outFilename);
         void initClusters (int numClusters);
+        void initNewClusters ();
+        void initLowerBounds ();
+        void initUpperBounds ();
+        void initAssignments ();
+        void initClusterDistributionDists ();
+        void initClusterDists ();
+        void initSDists ();
+        void initR ();
+        void computeClusterDists ();
+        void computeSDists ();
+        void resetR ();
         void clearClusterAssignments ();
         void assignDistributions ();
+        void assignNewClusters ();
         void computeNewClusters ();
+        void computeLowerBounds ();
+        void computeUpperBounds ();
         void computeClusterMean (size_t idx);
         double calcObjFn ();
+        bool needsClusterUpdate (size_t x, size_t c);
         size_t findClosestCluster (size_t distributionIdx);
+        size_t findClosestInitCluster (size_t distributionIdx);
+        size_t getCluster (size_t distributionIdx);
+        double computeDcDist (size_t x, size_t c);
+        double dcDist (size_t x, size_t c);
+        double cDist (size_t c1, size_t c2);
 
         // test friend functions
         friend class PKMeansTests;
