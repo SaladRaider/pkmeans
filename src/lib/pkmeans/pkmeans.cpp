@@ -134,19 +134,9 @@ size_t PKMeans::findClosestCluster (size_t x) {
     if (upperBounds[x] <= sDists[cx])
         return cx;
     for (size_t c = 0; c < clusters.size (); c++) {
-        if (!needsClusterUpdate (x, c))
-            continue;
-        if (r[x]) {
-            computeDcDist (x, cx);
-            r[x] = false;
-        } else {
-            clusterDistributionDists[x][c] = upperBounds[x];
-        }
-        if ((dcDist (x, cx) > lowerBounds[x][c] ||
-            dcDist (x, cx) > 0.5 * cDist (cx, c)) &&
-            computeDcDist (x, c) < dcDist (x, cx)) {
+        if (needsClusterUpdateApprox (x, c) &&
+            needsClusterUpdate (x, c))
             cx = c;
-        }
     }
     return cx;
 }
@@ -206,7 +196,7 @@ void PKMeans::computeNewClusters () {
 double PKMeans::calcObjFn () {
     double sum = 0.0;
     for (size_t x = 0; x < distributions.size (); x++) {
-        sum += dcDist (x, getCluster (x));
+        sum += computeDcDist (x, getCluster (x));
     }
     return sum;
 }
@@ -224,7 +214,7 @@ void PKMeans::initLowerBounds () {
 void PKMeans::initUpperBounds () {
     upperBounds.clear ();
     for (size_t x = 0; x < distributions.size (); x++) {
-        upperBounds.emplace_back (dcDist (x, getCluster (x)));
+        upperBounds.emplace_back (computeDcDist (x, getCluster (x)));
     }
 }
 
@@ -265,14 +255,14 @@ void PKMeans::initSDists () {
 
 void PKMeans::initR () {
     r.clear ();
-    for (size_t c = 0; c < clusters.size (); c++) {
+    for (size_t x = 0; x < distributions.size (); x++) {
         r.emplace_back (true);
     }
 }
 
 void PKMeans::resetR () {
-    for (size_t c = 0; c < clusters.size (); c++) {
-        r[c] = true;
+    for (size_t x = 0; x < distributions.size (); x++) {
+        r[x] = true;
     }
 }
 
@@ -284,7 +274,7 @@ void PKMeans::computeClusterDists () {
                 clusters[c1], clusters[c2]
             );
             if (c1 != c2 && clusterDists[c1][c2] < sDists[c1])
-                sDists[c1] = clusterDists[c1][c2];
+                sDists[c1] = 0.5 * clusterDists[c1][c2];
         }
     }
 }
@@ -328,9 +318,21 @@ double PKMeans::cDist (size_t c1, size_t c2) {
     return clusterDists[c1][c2];
 }
 
-bool PKMeans::needsClusterUpdate (size_t x, size_t c) {
+bool PKMeans::needsClusterUpdateApprox (size_t x, size_t c) {
     return c != getCluster (x) &&
         upperBounds[x] > lowerBounds[x][c] &&
         upperBounds[x] > 0.5 * cDist (getCluster (x), c);
 }
 
+bool PKMeans::needsClusterUpdate (size_t x, size_t c) {
+    size_t cx = getCluster (x);
+    if (r[x]) {
+        computeDcDist (x, cx);
+        r[x] = false;
+    } else {
+        clusterDistributionDists[x][c] = upperBounds[x];
+    }
+    return (dcDist (x, cx) > lowerBounds[x][c] ||
+            dcDist (x, cx) > 0.5 * cDist (cx, c)) &&
+            computeDcDist (x, c) < dcDist (x, cx);
+}

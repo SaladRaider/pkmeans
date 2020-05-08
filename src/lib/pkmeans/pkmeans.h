@@ -43,6 +43,7 @@ class PKMeans {
         void computeLowerBounds ();
         void computeUpperBounds ();
         void computeClusterMean (size_t c);
+        bool needsClusterUpdateApprox (size_t x, size_t c);
         bool needsClusterUpdate (size_t x, size_t c);
         size_t findClosestCluster (size_t x);
         size_t findClosestInitCluster (size_t x);

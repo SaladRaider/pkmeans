@@ -153,7 +153,7 @@ TEST_F (PKMeansTests, InitR) {
     pkmeans.initSDists ();
     pkmeans.initR ();
 
-    ASSERT_EQ (pkmeans.clusters.size (), pkmeans.r.size ());
+    ASSERT_EQ (pkmeans.distributions.size (), pkmeans.r.size ());
 }
 
 TEST_F (PKMeansTests, InitAssignments) {
@@ -249,11 +249,11 @@ TEST_F (PKMeansTests, ComputeClusterDists) {
             pkmeans.clusterDists[c1][c2]);
     }
     EXPECT_EQ (
-        Distribution<double>::emd (
+        0.5 * Distribution<double>::emd (
             pkmeans.clusters[0], pkmeans.clusters[1]),
         pkmeans.sDists[0]);
     EXPECT_EQ (
-        Distribution<double>::emd (
+        0.5 * Distribution<double>::emd (
             pkmeans.clusters[0], pkmeans.clusters[1]),
         pkmeans.sDists[1]);
 }
@@ -360,6 +360,18 @@ TEST_F (PKMeansTests, ComputeUpperBounds) {
 }
 
 TEST_F (PKMeansTests, NeedsClusterUpdate) {
+    for (size_t i = 0; i < pkmeans.distributions.size (); i++) {
+        pkmeans.distributions[i].fill (0.0);
+    }
+    pkmeans.distributions[0][0] = 1.0;
+    pkmeans.distributions[0][49] = 1.0;
+    pkmeans.distributions[1][1] = 1.0;
+    pkmeans.distributions[1][48] = 1.0;
+    pkmeans.distributions[2][24] = 1.0;
+    pkmeans.distributions[2][25] = 1.0;
+    pkmeans.distributions[3][20] = 1.0;
+    pkmeans.distributions[3][30] = 1.0;
+
     pkmeans.initClusters (2);
     pkmeans.clusters[0].fill (0.0);
     pkmeans.clusters[1].fill (0.0);
@@ -391,29 +403,31 @@ TEST_F (PKMeansTests, NeedsClusterUpdate) {
     pkmeans.computeUpperBounds ();
     pkmeans.resetR ();
     pkmeans.assignNewClusters ();
+    pkmeans.computeClusterDists ();
 
     for (size_t x = 0; x < pkmeans.distributions.size (); x++)
     for (size_t c = 0; c < pkmeans.clusters.size (); c++) {
-        if (c != pkmeans.getCluster (x))
+        if (c != pkmeans.getCluster (x)) {
+            EXPECT_TRUE (pkmeans.needsClusterUpdateApprox (x, c));
             EXPECT_TRUE (pkmeans.needsClusterUpdate (x, c));
-        else
+        }
+        else {
             EXPECT_FALSE (pkmeans.needsClusterUpdate (x, c));
+        }
     }
-
+    pkmeans.assignDistributions ();
+    pkmeans.computeNewClusters ();
+    pkmeans.newClusters[0].fill (0.0);
+    pkmeans.newClusters[1].fill (0.0);
+    pkmeans.newClusters[1][0] = 1.0;
+    pkmeans.newClusters[1][49] = 1.0;
+    pkmeans.newClusters[0][23] = 1.0;
+    pkmeans.newClusters[0][22] = 1.0;
+    pkmeans.computeLowerBounds ();
+    pkmeans.computeUpperBounds ();
+    pkmeans.resetR ();
+    pkmeans.assignNewClusters ();
     pkmeans.computeClusterDists ();
-    // pkmeans.assignDistributions ();
-    // pkmeans.computeNewClusters ();
-    // pkmeans.newClusters[0].fill (0.0);
-    // pkmeans.newClusters[1].fill (0.0);
-    // pkmeans.newClusters[1][0] = 1.0;
-    // pkmeans.newClusters[1][49] = 1.0;
-    // pkmeans.newClusters[0][23] = 1.0;
-    // pkmeans.newClusters[0][22] = 1.0;
-
-    // pkmeans.computeLowerBounds ();
-    // pkmeans.computeUpperBounds ();
-    // pkmeans.resetR ();
-    // pkmeans.assignNewClusters ();
 
     for (size_t x = 0; x < pkmeans.distributions.size (); x++)
     for (size_t c = 0; c < pkmeans.clusters.size (); c++) {
@@ -831,19 +845,17 @@ TEST_F (PKMeansTests, CalcObjFn) {
     EXPECT_DOUBLE_EQ (15.0, pkmeans.calcObjFn ());
 
     pkmeans.computeNewClusters ();
+    pkmeans.newClusters[0].fill (0.0);
+    pkmeans.newClusters[1].fill (0.0);
+    pkmeans.newClusters[0][2] = 1.0;
+    pkmeans.newClusters[0][47] = 1.0;
+    pkmeans.newClusters[1][24] = 1.0;
+    pkmeans.newClusters[1][21] = 1.0;
+
     pkmeans.computeLowerBounds ();
     pkmeans.computeUpperBounds ();
     pkmeans.resetR ();
-
-    pkmeans.clusters[0].fill (0.0);
-    pkmeans.clusters[1].fill (0.0);
-    pkmeans.clusters[0][2] = 1.0;
-    pkmeans.clusters[0][47] = 1.0;
-    pkmeans.clusters[1][24] = 1.0;
-    pkmeans.clusters[1][21] = 1.0;
-
-    pkmeans.computeClusterDists ();
-    pkmeans.assignDistributions ();
+    pkmeans.assignNewClusters ();
 
     EXPECT_DOUBLE_EQ (17.0, pkmeans.calcObjFn ());
 }
