@@ -60,8 +60,8 @@ void PKMeans::readDistributions (std::string inFilename) {
 void PKMeans::saveClusters (std::string outFilename) {
     std::ofstream f;
     f.open (outFilename);
-    for (size_t i = 0; i < clusters.size (); i++) {
-        f << clusters[i] << '\n';
+    for (size_t c = 0; c < clusters.size (); c++) {
+        f << clusters[c] << '\n';
     }
     f.close ();
 }
@@ -69,9 +69,9 @@ void PKMeans::saveClusters (std::string outFilename) {
 void PKMeans::saveAssignments (std::string outFilename) {
     std::ofstream f;
     f.open (outFilename);
-    for (size_t i = 0; i < clusterAssignments.size (); i++) {
-        for (size_t j = 0; j < clusterAssignments[i].size (); j++) {
-            f << i << ' ' << clusterAssignments[i][j] << '\n';
+    for (size_t c = 0; c < clusterAssignments.size (); c++) {
+        for (size_t j = 0; j < clusterAssignments[c].size (); j++) {
+            f << c << ' ' << clusterAssignments[c][j] << '\n';
         }
     }
     f.close ();
@@ -91,17 +91,16 @@ void PKMeans::initClusters (int numClusters) {
     clusterAssignments.emplace_back ();
 
     for (size_t k = 1; k < kMax; k++) {
+        initClusterDists ();
+        initClusterDistributionDists ();
+        initSDists ();
+        initLowerBounds ();
+        computeClusterDists ();
         initAssignments ();
 
         // calculate weighted probabillities
-        for (size_t c = 0; c < clusterAssignments.size (); c++) {
-            for (size_t i = 0; i < clusterAssignments[i].size (); i++) {
-                x = clusterAssignments [c][i];
-                weightedP[x] = Distribution<double>::emd (
-                    distributions[x], clusters[c]
-                );
-            }
-        }
+        for (x = 0; x < distributions.size (); x++)
+            weightedP[x] = computeDcDist (x, getCluster (x));
         weightedP *= weightedP;
         weightedP /= weightedP.sum ();
 
@@ -125,8 +124,8 @@ void PKMeans::initNewClusters () {
 }
 
 void PKMeans::clearClusterAssignments () {
-    for (size_t i = 0; i < clusterAssignments.size (); i++) {
-        clusterAssignments[i].clear ();
+    for (size_t c = 0; c < clusterAssignments.size (); c++) {
+        clusterAssignments[c].clear ();
     }
 }
 
@@ -143,34 +142,33 @@ size_t PKMeans::findClosestCluster (size_t x) {
         } else {
             clusterDistributionDists[x][c] = upperBounds[x];
         }
-        if (dcDist (x, cx) > lowerBounds[x][c] ||
-            dcDist (x, cx) > 0.5 * cDist (cx, c)) {
-            if (computeDcDist (x, c) < dcDist (x, cx)) {
-                cx = c;
-            }
+        if ((dcDist (x, cx) > lowerBounds[x][c] ||
+            dcDist (x, cx) > 0.5 * cDist (cx, c)) &&
+            computeDcDist (x, c) < dcDist (x, cx)) {
+            cx = c;
         }
     }
     return cx;
 }
 
-size_t PKMeans::findClosestInitCluster (size_t distributionIdx) {
+size_t PKMeans::findClosestInitCluster (size_t x) {
     // if 1/2 d(c,c') >= d(x,c), then
     //     d(x,c') >= d(x,c)
-    size_t closestIdx = 0;
-    double dist = computeDcDist (distributionIdx, 0);
+    size_t closestC = 0;
+    double dist = computeDcDist (x, closestC);
     double _cDist;
     double newDist;
-    for (size_t i = 1; i < clusters.size (); i++) {
-        _cDist = cDist (i-1, i);
+    for (size_t c = 1; c < clusters.size (); c++) {
+        _cDist = cDist (closestC, c);
         if (0.5 * _cDist >= dist)
             continue;
-        newDist = computeDcDist (distributionIdx, i);
+        newDist = computeDcDist (x, c);
         if (newDist < dist) {
-            closestIdx = i;
+            closestC = c;
             dist = newDist;
         }
     }
-    return closestIdx;
+    return closestC;
 }
 
 size_t PKMeans::getCluster (size_t distributionIdx) {
@@ -180,28 +178,28 @@ size_t PKMeans::getCluster (size_t distributionIdx) {
 void PKMeans::assignDistributions () {
     converged = true;
     clearClusterAssignments ();
-    size_t closestClusterIdx;
+    size_t cx;
     for (size_t x = 0; x < distributions.size (); x++) {
-        closestClusterIdx = findClosestCluster (x);
-        clusterAssignments[closestClusterIdx].emplace_back (x);
-        if (closestClusterIdx != prevClusterAssignments[x]) {
+        cx = findClosestCluster (x);
+        clusterAssignments[cx].emplace_back (x);
+        if (cx != prevClusterAssignments[x]) {
             converged = false;
-            prevClusterAssignments[x] = closestClusterIdx;
+            prevClusterAssignments[x] = cx;
         }
     }
 }
 
-void PKMeans::computeClusterMean (size_t idx) {
-    newClusters[idx].fill (0.0);
-    for (size_t i = 0; i < clusterAssignments[idx].size (); i++) {
-        newClusters[idx] += distributions [clusterAssignments [idx][i]];
+void PKMeans::computeClusterMean (size_t c) {
+    newClusters[c].fill (0.0);
+    for (size_t i = 0; i < clusterAssignments[c].size (); i++) {
+        newClusters[c] += distributions [clusterAssignments [c][i]];
     }
-    newClusters[idx] /= double(clusterAssignments[idx].size ());
+    newClusters[c] /= double(clusterAssignments[c].size ());
 }
 
 void PKMeans::computeNewClusters () {
-    for (size_t i = 0; i < clusters.size (); i++) {
-        computeClusterMean (i);
+    for (size_t c = 0; c < clusters.size (); c++) {
+        computeClusterMean (c);
     }
 }
 
@@ -214,15 +212,17 @@ double PKMeans::calcObjFn () {
 }
 
 void PKMeans::initLowerBounds () {
-    for (size_t i = 0; i < distributions.size (); i++) {
+    lowerBounds.clear ();
+    for (size_t x = 0; x < distributions.size (); x++) {
         lowerBounds.emplace_back ();
-        for (size_t j = 0; j < clusters.size (); j++) {
-            lowerBounds[i].emplace_back ();
+        for (size_t c = 0; c < clusters.size (); c++) {
+            lowerBounds[x].emplace_back ();
         }
     }
 }
 
 void PKMeans::initUpperBounds () {
+    upperBounds.clear ();
     for (size_t x = 0; x < distributions.size (); x++) {
         upperBounds.emplace_back (dcDist (x, getCluster (x)));
     }
@@ -231,63 +231,67 @@ void PKMeans::initUpperBounds () {
 void PKMeans::initAssignments () {
     size_t closestClusterIdx;
     clearClusterAssignments ();
-    for (size_t i = 0; i < distributions.size (); i++) {
-        closestClusterIdx = findClosestInitCluster (i);
-        clusterAssignments[closestClusterIdx].emplace_back (i);
-        prevClusterAssignments[i] = closestClusterIdx;
+    for (size_t x = 0; x < distributions.size (); x++) {
+        closestClusterIdx = findClosestInitCluster (x);
+        clusterAssignments[closestClusterIdx].emplace_back (x);
+        prevClusterAssignments[x] = closestClusterIdx;
     }
 }
 
 void PKMeans::initClusterDistributionDists () {
-    for (size_t i = 0; i < distributions.size (); i++) {
+    clusterDistributionDists.clear ();
+    for (size_t x = 0; x < distributions.size (); x++) {
         clusterDistributionDists.emplace_back ();
-        for (size_t j = 0; j < clusters.size (); j++)
-            clusterDistributionDists.emplace_back ();
+        for (size_t c = 0; c < clusters.size (); c++)
+            clusterDistributionDists[x].emplace_back ();
     }
 }
 
 void PKMeans::initClusterDists () {
-    for (size_t i = 0; i < clusters.size (); i++) {
+    clusterDists.clear ();
+    for (size_t c1 = 0; c1 < clusters.size (); c1++) {
         clusterDists.emplace_back ();
-        for (size_t j = 0; j < clusters.size (); j++)
-            clusterDists.emplace_back ();
+        for (size_t c2 = 0; c2 < clusters.size (); c2++)
+            clusterDists[c1].emplace_back ();
     }
 }
 
 void PKMeans::initSDists () {
-    for (size_t i = 0; i < clusters.size (); i++) {
+    sDists.clear ();
+    for (size_t c = 0; c < clusters.size (); c++) {
         sDists.emplace_back ();
     }
 }
 
 void PKMeans::initR () {
-    for (size_t i = 0; i < clusters.size (); i++) {
+    r.clear ();
+    for (size_t c = 0; c < clusters.size (); c++) {
         r.emplace_back (true);
     }
 }
 
 void PKMeans::resetR () {
-    for (size_t i = 0; i < clusters.size (); i++) {
-        r[i] = true;
+    for (size_t c = 0; c < clusters.size (); c++) {
+        r[c] = true;
     }
 }
 
 void PKMeans::computeClusterDists () {
-    for (size_t i = 0; i < clusters.size (); i++) {
-        sDists[i] = DBL_MAX;
-        for (size_t j = 0; j < clusters.size (); j++) {
-            clusterDists[i][j] = Distribution<double>::emd (
-                clusters[i], clusters[j]
+    for (size_t c1 = 0; c1 < clusters.size (); c1++) {
+        sDists[c1] = DBL_MAX;
+        for (size_t c2 = 0; c2 < clusters.size (); c2++) {
+            clusterDists[c1][c2] = Distribution<double>::emd (
+                clusters[c1], clusters[c2]
             );
-            if (clusterDists[i][j] < sDists[i])
-                sDists[i] = clusterDists[i][j];
+            if (c1 != c2 && clusterDists[c1][c2] < sDists[c1])
+                sDists[c1] = clusterDists[c1][c2];
         }
     }
 }
 
 void PKMeans::computeLowerBounds () {
     for (size_t x = 0; x < distributions.size (); x++)
-    for (size_t c = 0; c < distributions.size (); c++)
+    for (size_t c = 0; c < clusters.size (); c++)
         lowerBounds[x][c] = fmax (
             lowerBounds[x][c] - Distribution<double>::emd (
                 clusters[c], newClusters[c]
@@ -304,7 +308,7 @@ void PKMeans::computeUpperBounds () {
 }
 
 void PKMeans::assignNewClusters () {
-    for (size_t c = 0; c < distributions.size (); c++)
+    for (size_t c = 0; c < clusters.size (); c++)
         clusters[c] = newClusters[c];
 }
 
