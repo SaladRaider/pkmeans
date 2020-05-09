@@ -2,6 +2,9 @@
 #include <fstream>
 #include <unordered_set>
 #include <tgmath.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include "pkmeans.h"
 
 using namespace pkmeans;
@@ -16,7 +19,9 @@ void PKMeans::run (int numClusters, int numThreads,
 
     unsigned int numIterations = 1;
     readDistributions (inFilename);
+    printf ("done reading file.\n");
     initClusters (numClusters);
+    printf ("done intializing centroids.\n");
     initNewClusters ();
     initLowerBounds ();
     initClusterDists ();
@@ -24,6 +29,7 @@ void PKMeans::run (int numClusters, int numThreads,
     initUpperBoundNeedsUpdate ();
     initAssignments ();
     initUpperBounds ();
+    printf ("done intializing.\n");
     computeNewClusters ();
     computeLowerBounds ();
     computeUpperBounds ();
@@ -48,17 +54,52 @@ void PKMeans::run (int numClusters, int numThreads,
 }
 
 void PKMeans::readDistributions (std::string inFilename) {
-    std::ifstream infile;
-    std::string fileBuffer;
-    infile.open (inFilename);
-    while (infile) {
-        Distribution<double> newDistribution;
-        if (!(infile >> newDistribution))
+    const auto BUFFER_SIZE = 16*1024;
+    const auto STR_SIZE = 64;
+    int fd = open (inFilename.c_str (), O_RDONLY);
+    if (fd == -1) {
+        fprintf (stderr, "error opening file %s\n", inFilename.c_str ());
+        return;
+    }
+
+    char buf[BUFFER_SIZE + 1];
+    char doubleStr[STR_SIZE];
+    char *p;
+    char *w;
+    double bucketVal;
+    Distribution<double> newDistribution;
+
+    while(size_t bytes_read = read (fd, buf, BUFFER_SIZE)) {
+        if(bytes_read == size_t (-1))
+            fprintf (stderr, "read failed on file %s\n", inFilename.c_str ());
+        if (!bytes_read)
             break;
+        p = buf;
+        w = &doubleStr[0];
+        memset (doubleStr, '\0', sizeof (char) * STR_SIZE);
+        for (p = buf; p < buf + bytes_read; ++p) {
+            if (*p == '\n') {
+                bucketVal = atof (doubleStr);
+                newDistribution.emplace_back (bucketVal);
+                distributions.emplace_back (newDistribution);
+                clusterMap.emplace_back (size_t (-1));
+                newDistribution.clear ();
+                memset (doubleStr, '\0', sizeof (char) * STR_SIZE);
+                w = &doubleStr[0];
+            } else if (*p == ' ') {
+                bucketVal = atof (doubleStr);
+                newDistribution.emplace_back (bucketVal);
+                memset (doubleStr, '\0', sizeof (char) * STR_SIZE);
+                w = &doubleStr[0];
+            } else {
+                memcpy (w++, p, sizeof (char) * 1);
+            }
+        }
+    }
+    if (newDistribution.size () != 0) {
         distributions.emplace_back (newDistribution);
         clusterMap.emplace_back (size_t (-1));
     }
-    infile.close ();
 }
 
 void PKMeans::saveClusters (std::string outFilename) {

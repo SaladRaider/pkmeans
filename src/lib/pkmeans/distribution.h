@@ -14,6 +14,14 @@ struct Distribution {
     public:
         Distribution () {};
 
+        void emplace_back (const T &val) {
+            buckets.emplace_back (val);
+        }
+
+        void clear () {
+            buckets.clear ();
+        }
+
         size_t size () const {
             return buckets.size ();
         };
