@@ -3,6 +3,7 @@
 #include <pkmeans/pkmeans.h>
 #include <string>
 #include <time.h>
+#include <memory>
 
 using namespace pkmeans;
 using namespace std;
@@ -43,8 +44,8 @@ int main(int argc, char **argv) {
     // set rand seed
     srand (time (NULL));
 
-    PKMeans pkmeans;
-    pkmeans.run (numClusters, numThreads, inFilename,
+    auto pkmeans = std::make_unique<PKMeans> ();
+    pkmeans->run (numClusters, numThreads, inFilename,
                  assignmentsOut, clustersOut);
     return 0;
 }
