@@ -16,7 +16,6 @@ class PKMeans {
         std::vector<std::vector<double>> lowerBounds;
         std::vector<double> upperBounds;
         std::vector<std::vector<double>> clusterDists;
-        std::vector<std::vector<double>> clusterDistributionDists;
         std::vector<double> sDists;
         std::vector<double> r;
         bool converged = false;
@@ -29,7 +28,6 @@ class PKMeans {
         void initLowerBounds ();
         void initUpperBounds ();
         void initAssignments ();
-        void initClusterDistributionDists ();
         void initClusterDists ();
         void initSDists ();
         void initR ();
@@ -49,7 +47,6 @@ class PKMeans {
         size_t findClosestInitCluster (size_t x);
         size_t getCluster (size_t x);
         double computeDcDist (size_t x, size_t c);
-        double dcDist (size_t x, size_t c);
         double cDist (size_t c1, size_t c2);
         double calcObjFn ();
 
@@ -66,7 +63,6 @@ class PKMeans {
 
         FRIEND_TEST (PKMeansTests, InitNewClusters);
         FRIEND_TEST (PKMeansTests, InitLowerBounds);
-        FRIEND_TEST (PKMeansTests, InitClusterDistributionDists);
         FRIEND_TEST (PKMeansTests, InitClusterDists);
         FRIEND_TEST (PKMeansTests, InitSDists);
         FRIEND_TEST (PKMeansTests, InitR);
@@ -81,7 +77,6 @@ class PKMeans {
         FRIEND_TEST (PKMeansTests, FindClosestInitCluster);
         FRIEND_TEST (PKMeansTests, GetCluster);
         FRIEND_TEST (PKMeansTests, ComputeDcDist);
-        FRIEND_TEST (PKMeansTests, DcDist);
         FRIEND_TEST (PKMeansTests, CDist);
     public:
         void run (int numClusters, int numThreads, std::string inFilename,

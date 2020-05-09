@@ -104,25 +104,10 @@ TEST_F (PKMeansTests, InitLowerBounds) {
     }
 }
 
-TEST_F (PKMeansTests, InitClusterDistributionDists) {
-    pkmeans.initClusters (2);
-    pkmeans.initNewClusters ();
-    pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
-
-    ASSERT_EQ (pkmeans.distributions.size (),
-               pkmeans.clusterDistributionDists.size ());
-    for (size_t x = 0; x < pkmeans.clusterDistributionDists.size (); x++) {
-        EXPECT_EQ (pkmeans.clusters.size (),
-                   pkmeans.clusterDistributionDists[x].size ());
-    }
-}
-
 TEST_F (PKMeansTests, InitClusterDists) {
     pkmeans.initClusters (2);
     pkmeans.initNewClusters ();
     pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
     pkmeans.initClusterDists ();
 
     ASSERT_EQ (pkmeans.clusters.size (),
@@ -137,7 +122,6 @@ TEST_F (PKMeansTests, InitSDists) {
     pkmeans.initClusters (2);
     pkmeans.initNewClusters ();
     pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
     pkmeans.initClusterDists ();
     pkmeans.initSDists ();
 
@@ -148,7 +132,6 @@ TEST_F (PKMeansTests, InitR) {
     pkmeans.initClusters (2);
     pkmeans.initNewClusters ();
     pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
     pkmeans.initClusterDists ();
     pkmeans.initSDists ();
     pkmeans.initR ();
@@ -179,7 +162,6 @@ TEST_F (PKMeansTests, InitAssignments) {
 
     pkmeans.initNewClusters ();
     pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
     pkmeans.initClusterDists ();
     pkmeans.initSDists ();
     pkmeans.initR ();
@@ -199,7 +181,6 @@ TEST_F (PKMeansTests, InitUpperBounds) {
     pkmeans.initClusters (2);
     pkmeans.initNewClusters ();
     pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
     pkmeans.initClusterDists ();
     pkmeans.initSDists ();
     pkmeans.initR ();
@@ -233,7 +214,6 @@ TEST_F (PKMeansTests, ComputeClusterDists) {
 
     pkmeans.initNewClusters ();
     pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
     pkmeans.initClusterDists ();
     pkmeans.initSDists ();
     pkmeans.initR ();
@@ -262,7 +242,6 @@ TEST_F (PKMeansTests, ResetR) {
     pkmeans.initClusters (2);
     pkmeans.initNewClusters ();
     pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
     pkmeans.initClusterDists ();
     pkmeans.initSDists ();
     pkmeans.initR ();
@@ -310,7 +289,6 @@ TEST_F (PKMeansTests, ComputeLowerBounds) {
     pkmeans.initClusters (2);
     pkmeans.initNewClusters ();
     pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
     pkmeans.initClusterDists ();
     pkmeans.initSDists ();
     pkmeans.initR ();
@@ -337,7 +315,6 @@ TEST_F (PKMeansTests, ComputeUpperBounds) {
     pkmeans.initClusters (2);
     pkmeans.initNewClusters ();
     pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
     pkmeans.initClusterDists ();
     pkmeans.initSDists ();
     pkmeans.initR ();
@@ -382,7 +359,6 @@ TEST_F (PKMeansTests, NeedsClusterUpdate) {
 
     pkmeans.initNewClusters ();
     pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
     pkmeans.initClusterDists ();
     pkmeans.initSDists ();
     pkmeans.initR ();
@@ -458,7 +434,6 @@ TEST_F (PKMeansTests, FindClosestInitCluster) {
 
     pkmeans.initNewClusters ();
     pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
     pkmeans.initClusterDists ();
     pkmeans.initSDists ();
     pkmeans.initR ();
@@ -494,7 +469,6 @@ TEST_F (PKMeansTests, GetCluster) {
 
     pkmeans.initNewClusters ();
     pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
     pkmeans.initClusterDists ();
     pkmeans.initSDists ();
     pkmeans.initR ();
@@ -511,7 +485,6 @@ TEST_F (PKMeansTests, ComputeDcDist) {
     pkmeans.initClusters (2);
     pkmeans.initNewClusters ();
     pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
     pkmeans.initClusterDists ();
     pkmeans.initSDists ();
     pkmeans.initR ();
@@ -527,37 +500,6 @@ TEST_F (PKMeansTests, ComputeDcDist) {
             ),
             pkmeans.computeDcDist (x, c)
         );
-        EXPECT_EQ (
-            Distribution<double>::emd (
-                pkmeans.distributions[x],
-                pkmeans.clusters[c]
-            ),
-            pkmeans.clusterDistributionDists[x][c]
-        );
-    }
-}
-
-TEST_F (PKMeansTests, DcDist) {
-    pkmeans.initClusters (2);
-    pkmeans.initNewClusters ();
-    pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
-    pkmeans.initClusterDists ();
-    pkmeans.initSDists ();
-    pkmeans.initR ();
-    pkmeans.initAssignments ();
-    pkmeans.initUpperBounds ();
-
-    for (size_t x = 0; x < pkmeans.distributions.size (); x++)
-    for (size_t c = 0; c < pkmeans.clusters.size (); c++) {
-        pkmeans.computeDcDist (x, c);
-        EXPECT_EQ (
-            Distribution<double>::emd (
-                pkmeans.distributions[x],
-                pkmeans.clusters[c]
-            ),
-            pkmeans.dcDist(x, c)
-        );
     }
 }
 
@@ -565,7 +507,6 @@ TEST_F (PKMeansTests, CDist) {
     pkmeans.initClusters (2);
     pkmeans.initNewClusters ();
     pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
     pkmeans.initClusterDists ();
     pkmeans.initSDists ();
     pkmeans.initR ();
@@ -608,7 +549,6 @@ TEST_F (PKMeansTests, FindClosestCluster) {
 
     pkmeans.initNewClusters ();
     pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
     pkmeans.initClusterDists ();
     pkmeans.initSDists ();
     pkmeans.initR ();
@@ -672,7 +612,6 @@ TEST_F (PKMeansTests, AssignDistributions) {
 
     pkmeans.initNewClusters ();
     pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
     pkmeans.initClusterDists ();
     pkmeans.initSDists ();
     pkmeans.initR ();
@@ -696,7 +635,6 @@ TEST_F (PKMeansTests, ClearClusterAssignments) {
     pkmeans.initClusters (2);
     pkmeans.initNewClusters ();
     pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
     pkmeans.initClusterDists ();
     pkmeans.initSDists ();
     pkmeans.initR ();
@@ -742,7 +680,6 @@ TEST_F (PKMeansTests, ComputeClusterMean) {
 
     pkmeans.initNewClusters ();
     pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
     pkmeans.initClusterDists ();
     pkmeans.initSDists ();
     pkmeans.initR ();
@@ -788,7 +725,6 @@ TEST_F (PKMeansTests, ComputeNewClusters) {
 
     pkmeans.initNewClusters ();
     pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
     pkmeans.initClusterDists ();
     pkmeans.initSDists ();
     pkmeans.initR ();
@@ -833,7 +769,6 @@ TEST_F (PKMeansTests, CalcObjFn) {
 
     pkmeans.initNewClusters ();
     pkmeans.initLowerBounds ();
-    pkmeans.initClusterDistributionDists ();
     pkmeans.initClusterDists ();
     pkmeans.initSDists ();
     pkmeans.initR ();
