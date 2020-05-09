@@ -12,12 +12,12 @@ class PKMeans {
         std::vector<Distribution<double>> newClusters;
         std::vector<Distribution<double>> distributions;
         std::vector<std::vector<size_t>> clusterAssignments;
-        std::vector<size_t> prevClusterAssignments;
+        std::vector<size_t> clusterMap;
         std::vector<std::vector<double>> lowerBounds;
         std::vector<double> upperBounds;
         std::vector<std::vector<double>> clusterDists;
         std::vector<double> sDists;
-        std::vector<double> r;
+        std::vector<double> upperBoundNeedsUpdate;
         bool converged = false;
 
         void readDistributions (std::string inFileName);
@@ -30,10 +30,10 @@ class PKMeans {
         void initAssignments ();
         void initClusterDists ();
         void initSDists ();
-        void initR ();
+        void initUpperBoundNeedsUpdate ();
         void computeClusterDists ();
         void computeSDists ();
-        void resetR ();
+        void resetUpperBoundNeedsUpdate ();
         void clearClusterAssignments ();
         void assignDistributions ();
         void assignNewClusters ();
@@ -65,11 +65,11 @@ class PKMeans {
         FRIEND_TEST (PKMeansTests, InitLowerBounds);
         FRIEND_TEST (PKMeansTests, InitClusterDists);
         FRIEND_TEST (PKMeansTests, InitSDists);
-        FRIEND_TEST (PKMeansTests, InitR);
+        FRIEND_TEST (PKMeansTests, InitUpperBoundNeedsUpdate);
         FRIEND_TEST (PKMeansTests, InitAssignments);
         FRIEND_TEST (PKMeansTests, InitUpperBounds);
         FRIEND_TEST (PKMeansTests, ComputeClusterDists);
-        FRIEND_TEST (PKMeansTests, ResetR);
+        FRIEND_TEST (PKMeansTests, ResetUpperBoundNeedsUpdate);
         FRIEND_TEST (PKMeansTests, AssignNewClusters);
         FRIEND_TEST (PKMeansTests, ComputeLowerBounds);
         FRIEND_TEST (PKMeansTests, ComputeUpperBounds);
