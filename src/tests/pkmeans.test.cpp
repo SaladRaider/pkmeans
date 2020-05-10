@@ -160,17 +160,23 @@ TEST_F (PKMeansTests, InitAssignments) {
     pkmeans.clusters[0][49] = 1.0;
     pkmeans.clusters[1][23] = 1.0;
     pkmeans.clusters[1][22] = 1.0;
+    pkmeans.initLowerBounds ();
+    pkmeans.initClusterDists ();
+    pkmeans.computeDcDist (0, 0);
+    pkmeans.computeDcDist (1, 0);
+    pkmeans.computeDcDist (2, 0);
+    pkmeans.computeDcDist (3, 0);
+    pkmeans.computeDcDist (0, 1);
+    pkmeans.computeDcDist (1, 1);
+    pkmeans.computeDcDist (2, 1);
+    pkmeans.computeDcDist (3, 1);
 
     pkmeans.initAssignments ();
 
-    ASSERT_EQ(2, pkmeans.clusterAssignments.size ());
-    ASSERT_EQ(2, pkmeans.clusterAssignments[0].size ());
-    ASSERT_EQ(2, pkmeans.clusterAssignments[1].size ());
-
-    EXPECT_EQ(0, pkmeans.clusterAssignments[0][0]);
-    EXPECT_EQ(1, pkmeans.clusterAssignments[0][1]);
-    EXPECT_EQ(2, pkmeans.clusterAssignments[1][0]);
-    EXPECT_EQ(3, pkmeans.clusterAssignments[1][1]);
+    EXPECT_EQ(0, pkmeans.clusterMap[0]);
+    EXPECT_EQ(0, pkmeans.clusterMap[1]);
+    EXPECT_EQ(1, pkmeans.clusterMap[2]);
+    EXPECT_EQ(1, pkmeans.clusterMap[3]);
 }
 
 TEST_F (PKMeansTests, InitUpperBounds) {

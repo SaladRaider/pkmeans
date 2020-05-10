@@ -23,11 +23,7 @@ void PKMeans::run (int numClusters, int numThreads,
     initClusters (numClusters);
     printf ("done intializing centroids.\n");
     initNewClusters ();
-    // initLowerBounds ();
-    // initClusterDists ();
-    // initSDists ();
     initUpperBoundNeedsUpdate ();
-    // initAssignments ();
     initUpperBounds ();
     printf ("done intializing.\n");
     computeNewClusters ();
@@ -138,7 +134,7 @@ void PKMeans::initClusters (int numClusters) {
     for (size_t k = 1; k < kMax; k++) {
         // calculate weighted probabillities
         for (x = 0; x < distributions.size (); x++)
-            weightedP[x] = computeDcDist (x, getCluster (x));
+            weightedP[x] = lowerBounds[x][getCluster (x)];
         weightedP *= weightedP;
         weightedP /= weightedP.sum ();
 
@@ -187,27 +183,17 @@ size_t PKMeans::findClosestCluster (size_t x) {
 size_t PKMeans::findClosestInitCluster (size_t x) {
     // if 1/2 d(c,c') >= d(x,c), then
     //     d(x,c') >= d(x,c)
-    // if (clusters.size () == 1)
-    //     return 0;
-    // size_t cx = getCluster (x);
-    // if (0.5 * cDist (cx, clusters.size () - 1) >= lowerBounds[x][cx]
-    //     || computeDcDist (x, clusters.size () - 1) < lowerBounds[x][cx]) {
-    //     return cx;
-    // }
-    // return clusters.size () - 1;
-    size_t cx = 0;
-    double dist = computeDcDist (x, cx);
-    double newDist;
-    for (size_t c = 1; c < clusters.size (); c++) {
-        if (0.5 * cDist (cx, c) >= dist)
-            continue;
-        newDist = computeDcDist (x, c);
-        if (newDist < dist) {
-            cx = c;
-            dist = newDist;
-        }
+    if (clusters.size () == 1) {
+        computeDcDist (x, 0);
+        return 0;
     }
-    return cx;
+    size_t cx = getCluster (x);
+    computeDcDist (x, cx);
+    if (0.5 * cDist (cx, clusters.size () - 1) >= lowerBounds[x][cx]
+        || lowerBounds[x][cx] < computeDcDist (x, clusters.size () - 1)) {
+        return cx;
+    }
+    return clusters.size () - 1;
 }
 
 size_t PKMeans::getCluster (size_t x) {
@@ -323,12 +309,9 @@ void PKMeans::pushLowerBound () {
 void PKMeans::pushCluster (size_t x) {
     clusters.emplace_back (distributions[x]);
     clusterAssignments.emplace_back ();
-    initLowerBounds ();
-    initClusterDists ();
-    initSDists ();
-    // pushClusterDist ();
-    // pushSDist ();
-    // pushLowerBound ();
+    pushClusterDist ();
+    pushSDist ();
+    pushLowerBound ();
     initAssignments ();
 }
 
