@@ -31,6 +31,10 @@ class PKMeans {
         void initClusterDists ();
         void initSDists ();
         void initUpperBoundNeedsUpdate ();
+        void pushClusterDist ();
+        void pushSDist ();
+        void pushLowerBound ();
+        void pushCluster (size_t x);
         void computeClusterDists ();
         void computeSDists ();
         void resetUpperBoundNeedsUpdate ();

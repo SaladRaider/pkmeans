@@ -152,7 +152,8 @@ TEST_F (PKMeansTests, InitAssignments) {
     pkmeans.distributions[3][20] = 1.0;
     pkmeans.distributions[3][30] = 1.0;
 
-    pkmeans.initClusters (2);
+    pkmeans.clusters.emplace_back (pkmeans.distributions[0]);
+    pkmeans.clusters.emplace_back (pkmeans.distributions[2]);
     pkmeans.clusters[0].fill (0.0);
     pkmeans.clusters[1].fill (0.0);
     pkmeans.clusters[0][0] = 1.0;
@@ -160,11 +161,6 @@ TEST_F (PKMeansTests, InitAssignments) {
     pkmeans.clusters[1][23] = 1.0;
     pkmeans.clusters[1][22] = 1.0;
 
-    pkmeans.initNewClusters ();
-    pkmeans.initLowerBounds ();
-    pkmeans.initClusterDists ();
-    pkmeans.initSDists ();
-    pkmeans.initUpperBoundNeedsUpdate ();
     pkmeans.initAssignments ();
 
     ASSERT_EQ(2, pkmeans.clusterAssignments.size ());
@@ -433,12 +429,10 @@ TEST_F (PKMeansTests, FindClosestInitCluster) {
     pkmeans.clusters[1][22] = 1.0;
 
     pkmeans.initNewClusters ();
-    pkmeans.initLowerBounds ();
     pkmeans.initClusterDists ();
-    pkmeans.initSDists ();
     pkmeans.initUpperBoundNeedsUpdate ();
-    pkmeans.initAssignments ();
     pkmeans.initUpperBounds ();
+    pkmeans.assignDistributions ();
 
     EXPECT_EQ (0, pkmeans.findClosestInitCluster (0));
     EXPECT_EQ (0, pkmeans.findClosestInitCluster (1));
@@ -468,12 +462,10 @@ TEST_F (PKMeansTests, GetCluster) {
     pkmeans.clusters[1][22] = 1.0;
 
     pkmeans.initNewClusters ();
-    pkmeans.initLowerBounds ();
     pkmeans.initClusterDists ();
-    pkmeans.initSDists ();
     pkmeans.initUpperBoundNeedsUpdate ();
-    pkmeans.initAssignments ();
     pkmeans.initUpperBounds ();
+    pkmeans.assignDistributions ();
 
     EXPECT_EQ (0, pkmeans.getCluster (0));
     EXPECT_EQ (0, pkmeans.getCluster (1));
