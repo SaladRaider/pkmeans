@@ -150,7 +150,6 @@ void PKMeans::initClusters (int numClusters) {
         }
     }
 
-    clearClusterAssignments ();
     for (size_t x = 0; x < distributions.size (); x++) {
         clusterAssignments[getCluster (x)].emplace_back (x);
     }
@@ -188,7 +187,6 @@ size_t PKMeans::findClosestInitCluster (size_t x) {
         return 0;
     }
     size_t cx = getCluster (x);
-    computeDcDist (x, cx);
     if (0.5 * cDist (cx, clusters.size () - 1) >= lowerBounds[x][cx]
         || lowerBounds[x][cx] < computeDcDist (x, clusters.size () - 1)) {
         return cx;
