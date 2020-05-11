@@ -8,16 +8,16 @@
 namespace pkmeans {
 class PKMeans {
     private:
-        std::vector<Distribution<double>> clusters;
-        std::vector<Distribution<double>> newClusters;
-        std::vector<Distribution<double>> distributions;
+        std::vector<Distribution<float>> clusters;
+        std::vector<Distribution<float>> newClusters;
+        std::vector<Distribution<float>> distributions;
         std::vector<std::vector<size_t>> clusterAssignments;
         std::vector<size_t> clusterMap;
-        std::vector<std::vector<double>> lowerBounds;
-        std::vector<double> upperBounds;
-        std::vector<std::vector<double>> clusterDists;
-        std::vector<double> sDists;
-        std::vector<double> upperBoundNeedsUpdate;
+        std::vector<std::vector<float>> lowerBounds;
+        std::vector<float> upperBounds;
+        std::vector<std::vector<float>> clusterDists;
+        std::vector<float> sDists;
+        std::vector<float> upperBoundNeedsUpdate;
         bool converged = false;
 
         void readDistributions (std::string inFileName);
@@ -50,9 +50,9 @@ class PKMeans {
         size_t findClosestCluster (size_t x);
         size_t findClosestInitCluster (size_t x);
         size_t getCluster (size_t x);
-        double computeDcDist (size_t x, size_t c);
-        double cDist (size_t c1, size_t c2);
-        double calcObjFn ();
+        float computeDcDist (size_t x, size_t c);
+        float cDist (size_t c1, size_t c2);
+        float calcObjFn ();
 
         // test friend functions
         friend class PKMeansTests;

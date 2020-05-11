@@ -54,7 +54,7 @@ protected:
     }
 
     PKMeans pkmeans;
-    std::array<std::array<double, 50>, 4> dummyBuckets;
+    std::array<std::array<float, 50>, 4> dummyBuckets;
 };
 
 TEST_F (PKMeansTests, ReadDistributions) {
@@ -62,7 +62,7 @@ TEST_F (PKMeansTests, ReadDistributions) {
 
     for (size_t i = 0; i < dummyBuckets.size (); i++)
     for (size_t j = 0; j < dummyBuckets[i].size (); j++) {
-        EXPECT_DOUBLE_EQ (dummyBuckets[i][j],
+        EXPECT_FLOAT_EQ (dummyBuckets[i][j],
                           pkmeans.distributions[i][j])
             << "Distribution " << i << " different at bucket " << j << ".\n";
     }
@@ -226,16 +226,16 @@ TEST_F (PKMeansTests, ComputeClusterDists) {
     for (size_t c1 = 0; c1 < pkmeans.clusters.size (); c1++)
     for (size_t c2 = 0; c2 < pkmeans.clusters.size (); c2++) {
         EXPECT_EQ (
-            Distribution<double>::emd (
+            Distribution<float>::emd (
                 pkmeans.clusters[c1], pkmeans.clusters[c2]),
             pkmeans.clusterDists[c1][c2]);
     }
     EXPECT_EQ (
-        0.5 * Distribution<double>::emd (
+        0.5 * Distribution<float>::emd (
             pkmeans.clusters[0], pkmeans.clusters[1]),
         pkmeans.sDists[0]);
     EXPECT_EQ (
-        0.5 * Distribution<double>::emd (
+        0.5 * Distribution<float>::emd (
             pkmeans.clusters[0], pkmeans.clusters[1]),
         pkmeans.sDists[1]);
 }
@@ -303,7 +303,7 @@ TEST_F (PKMeansTests, ComputeLowerBounds) {
     for (size_t x = 0; x < pkmeans.distributions.size (); x++)
     for (size_t c = 0; c < pkmeans.clusters.size (); c++) {
         EXPECT_GE (
-            Distribution<double>::emd (
+            Distribution<float>::emd (
                 pkmeans.distributions[x],
                 pkmeans.clusters[c]
             ),
@@ -328,7 +328,7 @@ TEST_F (PKMeansTests, ComputeUpperBounds) {
 
     for (size_t x = 0; x < pkmeans.distributions.size (); x++) {
         EXPECT_LE (
-            Distribution<double>::emd (
+            Distribution<float>::emd (
                 pkmeans.distributions[x],
                 pkmeans.clusters[pkmeans.getCluster (x)]
             ),
@@ -492,7 +492,7 @@ TEST_F (PKMeansTests, ComputeDcDist) {
     for (size_t x = 0; x < pkmeans.distributions.size (); x++)
     for (size_t c = 0; c < pkmeans.clusters.size (); c++) {
         EXPECT_EQ (
-            Distribution<double>::emd (
+            Distribution<float>::emd (
                 pkmeans.distributions[x],
                 pkmeans.clusters[c]
             ),
@@ -515,7 +515,7 @@ TEST_F (PKMeansTests, CDist) {
     for (size_t c1 = 0; c1 < pkmeans.clusters.size (); c1++)
     for (size_t c2 = 0; c2 < pkmeans.clusters.size (); c2++) {
         EXPECT_EQ (
-            Distribution<double>::emd (
+            Distribution<float>::emd (
                 pkmeans.clusters[c1],
                 pkmeans.clusters[c2]
             ),
@@ -555,34 +555,34 @@ TEST_F (PKMeansTests, FindClosestCluster) {
 
     EXPECT_EQ (0, pkmeans.findClosestCluster (0))
         << "d(dist0,c0)="
-        << Distribution<double>::emd (pkmeans.distributions[0],
+        << Distribution<float>::emd (pkmeans.distributions[0],
                                       pkmeans.clusters[0])
         << "; d(dist0,c1)="
-        << Distribution<double>::emd (pkmeans.distributions[0],
+        << Distribution<float>::emd (pkmeans.distributions[0],
                                       pkmeans.clusters[1])
         << '\n';
     EXPECT_EQ (0, pkmeans.findClosestCluster (1))
         << "d(dist1,c0)="
-        << Distribution<double>::emd (pkmeans.distributions[1],
+        << Distribution<float>::emd (pkmeans.distributions[1],
                                       pkmeans.clusters[0])
         << "; d(dist1,c1)="
-        << Distribution<double>::emd (pkmeans.distributions[1],
+        << Distribution<float>::emd (pkmeans.distributions[1],
                                       pkmeans.clusters[1])
         << '\n';
     EXPECT_EQ (1, pkmeans.findClosestCluster (2))
         << "d(dist2,c0)="
-        << Distribution<double>::emd (pkmeans.distributions[2],
+        << Distribution<float>::emd (pkmeans.distributions[2],
                                       pkmeans.clusters[0])
         << "; d(dist2,c1)="
-        << Distribution<double>::emd (pkmeans.distributions[2],
+        << Distribution<float>::emd (pkmeans.distributions[2],
                                       pkmeans.clusters[1])
         << '\n';
     EXPECT_EQ (1, pkmeans.findClosestCluster (3))
         << "d(dist3,c0)="
-        << Distribution<double>::emd (pkmeans.distributions[3],
+        << Distribution<float>::emd (pkmeans.distributions[3],
                                       pkmeans.clusters[0])
         << "; d(dist3,c1)="
-        << Distribution<double>::emd (pkmeans.distributions[3],
+        << Distribution<float>::emd (pkmeans.distributions[3],
                                       pkmeans.clusters[1])
         << '\n';
 }
@@ -686,8 +686,8 @@ TEST_F (PKMeansTests, ComputeClusterMean) {
     pkmeans.computeClusterDists ();
     pkmeans.assignDistributions ();
 
-    Distribution<double> expected;
-    Distribution<double> result;
+    Distribution<float> expected;
+    Distribution<float> result;
 
     pkmeans.computeClusterMean (0);
     expected = (pkmeans.distributions[0] + pkmeans.distributions[1]) / 2.0;
@@ -732,8 +732,8 @@ TEST_F (PKMeansTests, ComputeNewClusters) {
     pkmeans.assignDistributions ();
     pkmeans.computeNewClusters ();
 
-    Distribution<double> expected;
-    Distribution<double> result;
+    Distribution<float> expected;
+    Distribution<float> result;
 
     expected = (pkmeans.distributions[0] + pkmeans.distributions[1]) / 2.0;
     result = pkmeans.newClusters[0];
@@ -775,7 +775,7 @@ TEST_F (PKMeansTests, CalcObjFn) {
     pkmeans.computeClusterDists ();
     pkmeans.assignDistributions ();
 
-    EXPECT_DOUBLE_EQ (15.0, pkmeans.calcObjFn ());
+    EXPECT_FLOAT_EQ (15.0, pkmeans.calcObjFn ());
 
     pkmeans.computeNewClusters ();
     pkmeans.newClusters[0].fill (0.0);
@@ -790,7 +790,7 @@ TEST_F (PKMeansTests, CalcObjFn) {
     pkmeans.resetUpperBoundNeedsUpdate ();
     pkmeans.assignNewClusters ();
 
-    EXPECT_DOUBLE_EQ (17.0, pkmeans.calcObjFn ());
+    EXPECT_FLOAT_EQ (17.0, pkmeans.calcObjFn ());
 }
 
 }

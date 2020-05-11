@@ -59,11 +59,11 @@ void PKMeans::readDistributions (std::string inFilename) {
     }
 
     char buf[BUFFER_SIZE + 1];
-    char doubleStr[STR_SIZE];
+    char floatStr[STR_SIZE];
     char *p;
     char *w;
-    double bucketVal;
-    Distribution<double> newDistribution;
+    float bucketVal;
+    Distribution<float> newDistribution;
 
     while(size_t bytes_read = read (fd, buf, BUFFER_SIZE)) {
         if(bytes_read == size_t (-1))
@@ -71,22 +71,22 @@ void PKMeans::readDistributions (std::string inFilename) {
         if (!bytes_read)
             break;
         p = buf;
-        w = &doubleStr[0];
-        memset (doubleStr, '\0', sizeof (char) * STR_SIZE);
+        w = &floatStr[0];
+        memset (floatStr, '\0', sizeof (char) * STR_SIZE);
         for (p = buf; p < buf + bytes_read; ++p) {
             if (*p == '\n') {
-                bucketVal = atof (doubleStr);
+                bucketVal = atof (floatStr);
                 newDistribution.emplace_back (bucketVal);
                 distributions.emplace_back (newDistribution);
                 clusterMap.emplace_back (size_t (0));
                 newDistribution.clear ();
-                memset (doubleStr, '\0', sizeof (char) * STR_SIZE);
-                w = &doubleStr[0];
+                memset (floatStr, '\0', sizeof (char) * STR_SIZE);
+                w = &floatStr[0];
             } else if (*p == ' ') {
-                bucketVal = atof (doubleStr);
+                bucketVal = atof (floatStr);
                 newDistribution.emplace_back (bucketVal);
-                memset (doubleStr, '\0', sizeof (char) * STR_SIZE);
-                w = &doubleStr[0];
+                memset (floatStr, '\0', sizeof (char) * STR_SIZE);
+                w = &floatStr[0];
             } else {
                 memcpy (w++, p, sizeof (char) * 1);
             }
@@ -121,9 +121,9 @@ void PKMeans::saveAssignments (std::string outFilename) {
 void PKMeans::initClusters (int numClusters) {
     size_t kMax = size_t (numClusters);
     size_t x = size_t (rand () % int(distributions.size ()));
-    double p;
-    double pSum;
-    Distribution<double> weightedP;
+    float p;
+    float pSum;
+    Distribution<float> weightedP;
 
     weightedP.fill (0.0, distributions.size ());
     initLowerBounds ();
@@ -139,7 +139,7 @@ void PKMeans::initClusters (int numClusters) {
         weightedP /= weightedP.sum ();
 
         // select new cluster based on weighted probabillites
-        p = double (rand ()) / double (RAND_MAX);
+        p = float (rand ()) / float (RAND_MAX);
         pSum = 0.0;
         for (x = 0; x < distributions.size (); x++) {
             pSum += weightedP[x];
@@ -213,7 +213,7 @@ void PKMeans::computeClusterMean (size_t c) {
     for (size_t i = 0; i < clusterAssignments[c].size (); i++) {
         newClusters[c] += distributions [clusterAssignments [c][i]];
     }
-    newClusters[c] /= double(clusterAssignments[c].size ());
+    newClusters[c] /= float(clusterAssignments[c].size ());
 }
 
 void PKMeans::computeNewClusters () {
@@ -222,8 +222,8 @@ void PKMeans::computeNewClusters () {
     }
 }
 
-double PKMeans::calcObjFn () {
-    double sum = 0.0;
+float PKMeans::calcObjFn () {
+    float sum = 0.0;
     for (size_t x = 0; x < distributions.size (); x++) {
         sum += computeDcDist (x, getCluster (x));
     }
@@ -259,7 +259,7 @@ void PKMeans::initClusterDists () {
         clusterDists.emplace_back ();
         for (size_t c2 = 0; c2 < clusters.size (); c2++)
             clusterDists[c1].emplace_back (
-                Distribution<double>::emd (
+                Distribution<float>::emd (
                     clusters[c1], clusters[c2]
             ));
     }
@@ -282,13 +282,13 @@ void PKMeans::initUpperBoundNeedsUpdate () {
 void PKMeans::pushClusterDist () {
     size_t cNew = clusters.size () - 1;
     for (size_t c = 0; c < cNew; c++) {
-        clusterDists[c].emplace_back (Distribution<double>::emd (
+        clusterDists[c].emplace_back (Distribution<float>::emd (
                 clusters[c], clusters[cNew]
         ));
     }
     clusterDists.emplace_back ();
     for (size_t c = 0; c < clusters.size (); c++) {
-        clusterDists[cNew].emplace_back (Distribution<double>::emd (
+        clusterDists[cNew].emplace_back (Distribution<float>::emd (
                 clusters[cNew], clusters[c]
         ));
     }
@@ -323,7 +323,7 @@ void PKMeans::computeClusterDists () {
     for (size_t c1 = 0; c1 < clusters.size (); c1++) {
         sDists[c1] = DBL_MAX;
         for (size_t c2 = 0; c2 < clusters.size (); c2++) {
-            clusterDists[c1][c2] = Distribution<double>::emd (
+            clusterDists[c1][c2] = Distribution<float>::emd (
                 clusters[c1], clusters[c2]
             );
             if (c1 != c2 && 0.5 * clusterDists[c1][c2] < sDists[c1])
@@ -336,7 +336,7 @@ void PKMeans::computeLowerBounds () {
     for (size_t x = 0; x < distributions.size (); x++)
     for (size_t c = 0; c < clusters.size (); c++)
         lowerBounds[x][c] = fmax (
-            lowerBounds[x][c] - Distribution<double>::emd (
+            lowerBounds[x][c] - Distribution<float>::emd (
                 clusters[c], newClusters[c]
             ), 0
         );
@@ -344,7 +344,7 @@ void PKMeans::computeLowerBounds () {
 
 void PKMeans::computeUpperBounds () {
     for (size_t x = 0; x < distributions.size (); x++)
-        upperBounds[x] += Distribution<double>::emd (
+        upperBounds[x] += Distribution<float>::emd (
             clusters[getCluster (x)],
             newClusters[getCluster (x)]
         );
@@ -355,14 +355,14 @@ void PKMeans::assignNewClusters () {
         clusters[c] = newClusters[c];
 }
 
-double PKMeans::computeDcDist (size_t x, size_t c) {
-    lowerBounds[x][c] = Distribution<double>::emd (
+float PKMeans::computeDcDist (size_t x, size_t c) {
+    lowerBounds[x][c] = Distribution<float>::emd (
         distributions[x], clusters[c]
     );
     return lowerBounds[x][c];
 }
 
-double PKMeans::cDist (size_t c1, size_t c2) {
+float PKMeans::cDist (size_t c1, size_t c2) {
     return clusterDists[c1][c2];
 }
 
