@@ -2,11 +2,26 @@
 #define __DISTRIBUTION_H_INCLUDED_
 
 #include <vector>
+//#include <thrust/device_vector.h>
+//#include <thrust/sequence.h>
+//#include <thrust/execution_policy.h>
 #include <sstream>
 #include <algorithm>
 #include <tgmath.h>
 
 namespace pkmeans {
+
+template<typename T>
+struct absdiff_functor {
+    typedef T first_argument_type;
+    typedef T second_argument_type;
+    typedef T result_type;
+    __host__ __device__
+    T operator () (const T &x, const T &y) const {
+        return fabs (x - y);
+    }
+};
+
 template <class T>
 struct Distribution {
     private:
@@ -192,12 +207,25 @@ struct Distribution {
             return rhs;
         };
 
-        static double emd (const Distribution &d1, const Distribution &d2) {
-            Distribution emdDistribution = d1 - d2;
-            for (size_t i = 1; i < emdDistribution.size (); i++) {
-                emdDistribution[i] += emdDistribution[i - 1];
-            }
-            return emdDistribution.absSum ();
+        static T emd (const Distribution &d1, const Distribution &d2) {
+            /*thrust::device_vector<T> buckets1 (d1.buckets);
+            thrust::device_vector<T> buckets2 (d2.buckets);
+            thrust::device_vector<T> scalars (buckets1.size ());
+            thrust::sequence (thrust::device, scalars.begin (), scalars.end (), 1);
+            thrust::transform (
+                buckets1.begin (), buckets1.end (),
+                buckets2.begin (), buckets2.begin (),
+                absdiff_functor<T> {}
+            );
+            thrust::transform (
+                buckets1.begin (), buckets1.end (),
+                buckets2.begin (), buckets2.begin (),
+                thrust::multiplies<T> ()
+            );
+            T sum = thrust::reduce (buckets2.begin (), buckets2.end (), T (0), thrust::plus<T> ());
+            */
+            T sum = 0;
+            return sum;
         };
 };
 }
