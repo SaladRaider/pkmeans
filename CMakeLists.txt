@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(pkmeans)
+project(pkmeans LANGUAGES CXX CUDA)
 
 cmake_policy(SET CMP0054 NEW)
 cmake_policy(SET CMP0079 NEW)
@@ -14,11 +14,9 @@ add_subdirectory(extern/googletest)
 find_library(gtest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 link_directories(${GTEST_LIBS_DIR})
-add_definitions("-fPIC")
 enable_testing()
 
-add_compile_options(-D_FORTIFY_SOURCE=2 -D_GLBICXX_ASSERTIONS
-    -fasynchronous-unwind-tables -fexceptions -fpie -fpic -fstack-protector -g -grecord-gcc-switches -O2 -pipe -std=c++14)
+add_compile_options(-D_FORTIFY_SOURCE=2 -D_GLBICXX_ASSERTIONS -g -DCOMPILER_SUPPORT_MF16C=ON -NMFGPU_INSTALL_INCLUDE_FILES=OFF)
 
 #
 # set up boost
