@@ -413,16 +413,38 @@ void* PKMeans::resetUpperBoundNeedsUpdateThread (void* args) {
 }
 
 void PKMeans::computeClusterDists () {
-    for (size_t c1 = 0; c1 < clusters.size (); c1++) {
-        sDists[c1] = 255;
-        for (size_t c2 = 0; c2 < clusters.size (); c2++) {
-            clusterDists[c1][c2] = Distribution<float>::emd8 (
-                clusters[c1], clusters[c2], denom
-            );
-            if (c1 != c2 && 0.5 * clusterDists[c1][c2] < sDists[c1])
-                sDists[c1] = 0.5 * clusterDists[c1][c2];
+    if (threads.size () > 1) {
+        runThreads (clusters.size (),
+                    PKMeans::computeClusterDistsThread);
+    } else {
+        for (size_t c1 = 0; c1 < clusters.size (); c1++) {
+            sDists[c1] = 255;
+            for (size_t c2 = 0; c2 < clusters.size (); c2++) {
+                clusterDists[c1][c2] = Distribution<float>::emd8 (
+                    clusters[c1], clusters[c2], denom
+                );
+                if (c1 != c2 && 0.5 * clusterDists[c1][c2] < sDists[c1])
+                    sDists[c1] = 0.5 * clusterDists[c1][c2];
+            }
         }
     }
+}
+
+void* PKMeans::computeClusterDistsThread (void* args) {
+    ThreadArgs *threadArgs = (ThreadArgs*) args;
+    PKMeans *pkmeans = (PKMeans*) threadArgs->_this;
+    for (size_t c1 = threadArgs->start; c1 < threadArgs->end; c1++) {
+        pkmeans->sDists[c1] = 255;
+        for (size_t c2 = 0; c2 < pkmeans->clusters.size (); c2++) {
+            pkmeans->clusterDists[c1][c2] = Distribution<float>::emd8 (
+                pkmeans->clusters[c1], pkmeans->clusters[c2],
+                pkmeans->denom
+            );
+            if (c1 != c2 && 0.5 * pkmeans->clusterDists[c1][c2] < pkmeans->sDists[c1])
+                pkmeans->sDists[c1] = 0.5 * pkmeans->clusterDists[c1][c2];
+        }
+    }
+    pthread_exit (NULL);
 }
 
 void PKMeans::computeLowerBounds () {

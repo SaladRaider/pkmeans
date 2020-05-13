@@ -76,6 +76,7 @@ class PKMeans {
         std::uint8_t cDist (size_t c1, size_t c2);
         float calcObjFn ();
         static void* assignDistributionsThread (void *args);
+        static void* computeClusterDistsThread (void *args);
         static void* computeNewClustersThread (void *args);
         static void* computeLowerBoundsThread (void *args);
         static void* computeUpperBoundsThread (void *args);
