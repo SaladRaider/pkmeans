@@ -5,6 +5,7 @@
 #include <pkmeans/distribution.h>
 #include <string>
 #include <pthread.h>
+#include <cstdint>
 
 namespace pkmeans {
 struct AssignThreadArgs {
@@ -26,15 +27,16 @@ class PKMeans {
         std::vector<Distribution<float>> distributions;
         std::vector<std::vector<size_t>> clusterAssignments;
         std::vector<size_t> clusterMap;
-        std::vector<std::vector<float>> lowerBounds;
-        std::vector<float> upperBounds;
-        std::vector<std::vector<float>> clusterDists;
-        std::vector<float> sDists;
+        std::vector<std::vector<std::uint8_t>> lowerBounds;
+        std::vector<std::uint8_t> upperBounds;
+        std::vector<std::vector<std::uint8_t>> clusterDists;
+        std::vector<std::uint8_t> sDists;
         std::vector<bool> upperBoundNeedsUpdate;
         std::vector<pthread_t> threads;
         std::vector<AssignThreadArgs> threadArgs;
         pthread_attr_t threadAttr;
         bool converged = false;
+        size_t denom = 1;
 
         void readDistributions (std::string inFileName);
         void saveClusters (std::string outFilename);
@@ -70,8 +72,8 @@ class PKMeans {
         size_t findClosestCluster (size_t x);
         size_t findClosestInitCluster (size_t x);
         size_t getCluster (size_t x);
-        float computeDcDist (size_t x, size_t c);
-        float cDist (size_t c1, size_t c2);
+        std::uint8_t computeDcDist (size_t x, size_t c);
+        std::uint8_t cDist (size_t c1, size_t c2);
         float calcObjFn ();
         static void* assignDistributionsThread (void *args);
         static void* computeNewClustersThread (void *args);

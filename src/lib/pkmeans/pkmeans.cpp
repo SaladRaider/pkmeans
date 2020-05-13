@@ -145,6 +145,7 @@ void PKMeans::readDistributions (std::string inFilename) {
         distributions.emplace_back (newDistribution);
         clusterMap.emplace_back (size_t (0));
     }
+    denom = (distributions[0].size () - 1) * distributions[0].sum ();
 }
 
 void PKMeans::saveClusters (std::string outFilename) {
@@ -303,7 +304,7 @@ void* PKMeans::computeNewClustersThread (void *args) {
 float PKMeans::calcObjFn () {
     float sum = 0.0;
     for (size_t x = 0; x < distributions.size (); x++) {
-        sum += computeDcDist (x, getCluster (x));
+        sum += Distribution<float>::emd (distributions[x], clusters[getCluster (x)]);
     }
     return sum;
 }
@@ -337,8 +338,8 @@ void PKMeans::initClusterDists () {
         clusterDists.emplace_back ();
         for (size_t c2 = 0; c2 < clusters.size (); c2++)
             clusterDists[c1].emplace_back (
-                Distribution<float>::emd (
-                    clusters[c1], clusters[c2]
+                Distribution<float>::emd8 (
+                    clusters[c1], clusters[c2], denom
             ));
     }
 }
@@ -360,14 +361,14 @@ void PKMeans::initUpperBoundNeedsUpdate () {
 void PKMeans::pushClusterDist () {
     size_t cNew = clusters.size () - 1;
     for (size_t c = 0; c < cNew; c++) {
-        clusterDists[c].emplace_back (Distribution<float>::emd (
-                clusters[c], clusters[cNew]
+        clusterDists[c].emplace_back (Distribution<float>::emd8 (
+                clusters[c], clusters[cNew], denom
         ));
     }
     clusterDists.emplace_back ();
     for (size_t c = 0; c < clusters.size (); c++) {
-        clusterDists[cNew].emplace_back (Distribution<float>::emd (
-                clusters[cNew], clusters[c]
+        clusterDists[cNew].emplace_back (Distribution<float>::emd8 (
+                clusters[cNew], clusters[c], denom
         ));
     }
 }
@@ -378,7 +379,7 @@ void PKMeans::pushSDist () {
 
 void PKMeans::pushLowerBound () {
     for (size_t x = 0; x < distributions.size (); x++) {
-        lowerBounds[x].emplace_back ();
+        lowerBounds[x].emplace_back (0.0);
     }
 }
 
@@ -399,10 +400,10 @@ void PKMeans::resetUpperBoundNeedsUpdate () {
 
 void PKMeans::computeClusterDists () {
     for (size_t c1 = 0; c1 < clusters.size (); c1++) {
-        sDists[c1] = DBL_MAX;
+        sDists[c1] = 255;
         for (size_t c2 = 0; c2 < clusters.size (); c2++) {
-            clusterDists[c1][c2] = Distribution<float>::emd (
-                clusters[c1], clusters[c2]
+            clusterDists[c1][c2] = Distribution<float>::emd8 (
+                clusters[c1], clusters[c2], denom
             );
             if (c1 != c2 && 0.5 * clusterDists[c1][c2] < sDists[c1])
                 sDists[c1] = 0.5 * clusterDists[c1][c2];
@@ -414,17 +415,18 @@ void PKMeans::computeLowerBounds () {
     for (size_t c = 0; c < clusters.size (); c++)
     for (size_t x = 0; x < distributions.size (); x++)
         lowerBounds[x][c] = fmax (
-            lowerBounds[x][c] - Distribution<float>::emd (
-                clusters[c], newClusters[c]
+            lowerBounds[x][c] - Distribution<float>::emd8 (
+                clusters[c], newClusters[c], denom
             ), 0
         );
 }
 
 void PKMeans::computeUpperBounds () {
     for (size_t x = 0; x < distributions.size (); x++)
-        upperBounds[x] += Distribution<float>::emd (
+        upperBounds[x] += Distribution<float>::emd8 (
             clusters[getCluster (x)],
-            newClusters[getCluster (x)]
+            newClusters[getCluster (x)],
+            denom
         );
 }
 
@@ -433,14 +435,14 @@ void PKMeans::assignNewClusters () {
         clusters[c] = newClusters[c];
 }
 
-float PKMeans::computeDcDist (size_t x, size_t c) {
-    lowerBounds[x][c] = Distribution<float>::emd (
-        distributions[x], clusters[c]
+std::uint8_t PKMeans::computeDcDist (size_t x, size_t c) {
+    lowerBounds[x][c] = Distribution<float>::emd8 (
+        distributions[x], clusters[c], denom
     );
     return lowerBounds[x][c];
 }
 
-float PKMeans::cDist (size_t c1, size_t c2) {
+std::uint8_t PKMeans::cDist (size_t c1, size_t c2) {
     return clusterDists[c1][c2];
 }
 
