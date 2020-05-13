@@ -301,7 +301,7 @@ void PKMeans::pushSDist () {
 
 void PKMeans::pushLowerBound () {
     for (size_t x = 0; x < distributions.size (); x++) {
-        lowerBounds[x].emplace_back ();
+        lowerBounds[x].emplace_back (0.0);
     }
 }
 
