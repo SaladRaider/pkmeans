@@ -17,7 +17,7 @@ class PKMeans {
         std::vector<float> upperBounds;
         std::vector<std::vector<float>> clusterDists;
         std::vector<float> sDists;
-        std::vector<float> upperBoundNeedsUpdate;
+        std::vector<bool> upperBoundNeedsUpdate;
         bool converged = false;
 
         void readDistributions (std::string inFileName);
