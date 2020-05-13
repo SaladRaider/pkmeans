@@ -192,12 +192,14 @@ struct Distribution {
             return rhs;
         };
 
-        static double emd (const Distribution &d1, const Distribution &d2) {
-            Distribution emdDistribution = d1 - d2;
-            for (size_t i = 1; i < emdDistribution.size (); i++) {
-                emdDistribution[i] += emdDistribution[i - 1];
+        static float emd (const Distribution &d1, const Distribution &d2) {
+            float emd_i = 0.0;
+            float sum = 0.0;
+            for (size_t i = 0; i < d1.size (); i++) {
+                emd_i += d1.buckets[i] - d2.buckets[i];
+                sum += fabs (emd_i);
             }
-            return emdDistribution.absSum ();
+            return sum;
         };
 };
 }
