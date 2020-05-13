@@ -445,12 +445,34 @@ void* PKMeans::computeLowerBoundsThread (void* args) {
 }
 
 void PKMeans::computeUpperBounds () {
-    for (size_t x = 0; x < distributions.size (); x++)
-        upperBounds[x] += Distribution<float>::emd8 (
-            clusters[getCluster (x)],
-            newClusters[getCluster (x)],
-            denom
-        );
+    if (threads.size () > 1) {
+        runThreads (clusters.size (),
+                    PKMeans::computeUpperBoundsThread);
+    } else {
+        std::uint8_t dist;
+        for (size_t c = 0; c < clusters.size (); c++) {
+            dist = Distribution<float>::emd8 (
+                clusters[c], newClusters[c], denom);
+            for (size_t i = 0; i < clusterAssignments[c].size (); i++) {
+                upperBounds [clusterAssignments[c][i]] += dist;
+            }
+        }
+    }
+}
+
+void* PKMeans::computeUpperBoundsThread (void* args) {
+    ThreadArgs *threadArgs = (ThreadArgs*) args;
+    PKMeans *pkmeans = (PKMeans*) threadArgs->_this;
+    std::uint8_t dist;
+    for (size_t c = threadArgs->start; c < threadArgs->end; c++) {
+        dist = Distribution<float>::emd8 (
+            pkmeans->clusters[c], pkmeans->newClusters[c],
+            pkmeans->denom);
+        for (size_t i = 0; i < pkmeans->clusterAssignments[c].size (); i++) {
+            pkmeans->upperBounds [pkmeans->clusterAssignments[c][i]] += dist;
+        }
+    }
+    pthread_exit (NULL);
 }
 
 void PKMeans::assignNewClusters () {
