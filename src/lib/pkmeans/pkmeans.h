@@ -79,6 +79,7 @@ class PKMeans {
         static void* computeNewClustersThread (void *args);
         static void* computeLowerBoundsThread (void *args);
         static void* computeUpperBoundsThread (void *args);
+        static void* resetUpperBoundNeedsUpdateThread (void *args);
 
         // test friend functions
         friend class PKMeansTests;

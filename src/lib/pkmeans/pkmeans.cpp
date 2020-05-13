@@ -393,9 +393,23 @@ void PKMeans::pushCluster (size_t x) {
 }
 
 void PKMeans::resetUpperBoundNeedsUpdate () {
-    for (size_t x = 0; x < distributions.size (); x++) {
-        upperBoundNeedsUpdate[x] = true;
+    if (threads.size () > 1) {
+        runThreads (distributions.size (),
+                    PKMeans::resetUpperBoundNeedsUpdateThread);
+    } else {
+        for (size_t x = 0; x < distributions.size (); x++) {
+            upperBoundNeedsUpdate[x] = true;
+        }
     }
+}
+
+void* PKMeans::resetUpperBoundNeedsUpdateThread (void* args) {
+    ThreadArgs *threadArgs = (ThreadArgs*) args;
+    PKMeans *pkmeans = (PKMeans*) threadArgs->_this;
+    for (size_t x = threadArgs->start; x < threadArgs->end; x++) {
+        pkmeans->upperBoundNeedsUpdate[x] = true;
+    }
+    pthread_exit (NULL);
 }
 
 void PKMeans::computeClusterDists () {
