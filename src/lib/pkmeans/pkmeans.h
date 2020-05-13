@@ -4,8 +4,21 @@
 #include <gtest/gtest.h>
 #include <pkmeans/distribution.h>
 #include <string>
+#include <pthread.h>
 
 namespace pkmeans {
+struct AssignThreadArgs {
+    void *_this = nullptr;
+    size_t start = 0;
+    size_t end = 0;
+
+    AssignThreadArgs (void *__this, size_t _start, size_t _end) {
+        _this = __this;
+        start = _start;
+        end = _end;
+    };
+};
+
 class PKMeans {
     private:
         std::vector<Distribution<float>> clusters;
@@ -18,11 +31,17 @@ class PKMeans {
         std::vector<std::vector<float>> clusterDists;
         std::vector<float> sDists;
         std::vector<bool> upperBoundNeedsUpdate;
+        std::vector<pthread_t> threads;
+        std::vector<AssignThreadArgs> threadArgs;
+        pthread_attr_t threadAttr;
         bool converged = false;
 
         void readDistributions (std::string inFileName);
         void saveClusters (std::string outFilename);
         void saveAssignments (std::string outFilename);
+        void initThreads (int numThreads);
+        void startThread (size_t tid, void* (*fn)(void*));
+        void joinThreads ();
         void initClusters (int numClusters);
         void initNewClusters ();
         void initLowerBounds ();
@@ -53,6 +72,7 @@ class PKMeans {
         float computeDcDist (size_t x, size_t c);
         float cDist (size_t c1, size_t c2);
         float calcObjFn ();
+        static void* assignDistributionsThread (void *args);
 
         // test friend functions
         friend class PKMeansTests;

@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include "pkmeans.h"
 
 using namespace pkmeans;
@@ -18,6 +19,7 @@ void PKMeans::run (int numClusters, int numThreads,
             assignmentsOut.c_str (), clustersOut.c_str());
 
     unsigned int numIterations = 1;
+    initThreads (numThreads);
     readDistributions (inFilename);
     printf ("done reading file.\n");
     initClusters (numClusters);
@@ -45,8 +47,39 @@ void PKMeans::run (int numClusters, int numThreads,
     }
     saveAssignments (assignmentsOut);
     saveClusters (clustersOut);
+    pthread_attr_destroy (&threadAttr);
 
     printf ("pkmeans finished running with %u iterations.\n", numIterations);
+}
+
+void PKMeans::initThreads (int numThreads) {
+    for (size_t i = 0; i < numThreads; i++) {
+        threads.emplace_back ();
+        threadArgs.emplace_back ((void*) this, 0, 0);
+    }
+    pthread_attr_init (&threadAttr);
+    pthread_attr_setdetachstate (&threadAttr, PTHREAD_CREATE_JOINABLE);
+}
+
+void PKMeans::startThread (size_t tid, void* (*fn)(void*)) {
+    int rc = pthread_create (&threads[tid], &threadAttr, fn,
+                             (void*) &(threadArgs[tid]));
+    if (rc) {
+        std::cout << "Error: unable to create thread," << rc << '\n';
+        exit (-1);
+    }
+}
+
+void PKMeans::joinThreads () {
+    int rc;
+    void *status;
+    for (size_t tid = 0; tid < threads.size (); tid++) {
+        rc = pthread_join (threads[tid], &status);
+        if (rc) {
+            std::cout << "Error: unable to join," << rc << '\n';
+            exit (-1);
+        }
+    }
 }
 
 void PKMeans::readDistributions (std::string inFilename) {
@@ -201,11 +234,37 @@ size_t PKMeans::getCluster (size_t x) {
 void PKMeans::assignDistributions () {
     converged = true;
     clearClusterAssignments ();
-    size_t cx;
-    for (size_t x = 0; x < distributions.size (); x++) {
-        cx = findClosestCluster (x);
-        clusterAssignments[cx].emplace_back (x);
+    if (threads.size () > 1) {
+        size_t rowsPerThread = distributions.size () / threads.size ();
+        size_t x = 0;
+        size_t tid = 0;
+        for (tid = 0; tid < threads.size () - 1; tid++) {
+            threadArgs[tid].start = x;
+            x += rowsPerThread;
+            threadArgs[tid].end = x;
+            startThread (tid, PKMeans::assignDistributionsThread);
+        }
+        threadArgs[tid].start = x;
+        threadArgs[tid].end = distributions.size ();
+        startThread (tid, PKMeans::assignDistributionsThread);
+        joinThreads ();
+    } else {
+        for (size_t x = 0; x < distributions.size (); x++) {
+            findClosestCluster (x);
+        }
     }
+    for (size_t x = 0; x < distributions.size (); x++) {
+        clusterAssignments[getCluster (x)].emplace_back (x);
+    }
+}
+
+void* PKMeans::assignDistributionsThread (void *args) {
+    AssignThreadArgs *threadArgs = (AssignThreadArgs*) args;
+    PKMeans *pkmeans = (PKMeans*) threadArgs->_this;
+    for (size_t x = threadArgs->start; x < threadArgs->end; x++) {
+        pkmeans->findClosestCluster (x);
+    }
+    pthread_exit (NULL);
 }
 
 void PKMeans::computeClusterMean (size_t c) {
