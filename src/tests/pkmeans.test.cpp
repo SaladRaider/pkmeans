@@ -143,6 +143,7 @@ TEST_F (PKMeansTests, InitAssignments) {
     for (size_t i = 0; i < pkmeans.distributions.size (); i++) {
         pkmeans.distributions[i].fill (0.0);
     }
+    pkmeans.denom = 2 * 49;
     pkmeans.distributions[0][0] = 1.0;
     pkmeans.distributions[0][49] = 1.0;
     pkmeans.distributions[1][1] = 1.0;
@@ -197,6 +198,7 @@ TEST_F (PKMeansTests, ComputeClusterDists) {
     for (size_t i = 0; i < pkmeans.distributions.size (); i++) {
         pkmeans.distributions[i].fill (0.0);
     }
+    pkmeans.denom = 2 * 49;
     pkmeans.distributions[0][0] = 1.0;
     pkmeans.distributions[0][49] = 1.0;
     pkmeans.distributions[1][1] = 1.0;
@@ -226,17 +228,17 @@ TEST_F (PKMeansTests, ComputeClusterDists) {
     for (size_t c1 = 0; c1 < pkmeans.clusters.size (); c1++)
     for (size_t c2 = 0; c2 < pkmeans.clusters.size (); c2++) {
         EXPECT_EQ (
-            Distribution<float>::emd (
-                pkmeans.clusters[c1], pkmeans.clusters[c2]),
+            Distribution<float>::emd8 (
+                pkmeans.clusters[c1], pkmeans.clusters[c2], pkmeans.denom),
             pkmeans.clusterDists[c1][c2]);
     }
     EXPECT_EQ (
-        0.5 * Distribution<float>::emd (
-            pkmeans.clusters[0], pkmeans.clusters[1]),
+        0.5 * Distribution<float>::emd8 (
+            pkmeans.clusters[0], pkmeans.clusters[1], pkmeans.denom),
         pkmeans.sDists[0]);
     EXPECT_EQ (
-        0.5 * Distribution<float>::emd (
-            pkmeans.clusters[0], pkmeans.clusters[1]),
+        0.5 * Distribution<float>::emd8 (
+            pkmeans.clusters[0], pkmeans.clusters[1], pkmeans.denom),
         pkmeans.sDists[1]);
 }
 
@@ -263,6 +265,7 @@ TEST_F (PKMeansTests, AssignNewClusters) {
     for (size_t i = 0; i < pkmeans.distributions.size (); i++) {
         pkmeans.distributions[i].fill (0.0);
     }
+    pkmeans.denom = 2 * 49;
     pkmeans.distributions[0][0] = 1.0;
     pkmeans.distributions[0][49] = 1.0;
     pkmeans.distributions[1][1] = 1.0;
@@ -328,9 +331,10 @@ TEST_F (PKMeansTests, ComputeUpperBounds) {
 
     for (size_t x = 0; x < pkmeans.distributions.size (); x++) {
         EXPECT_LE (
-            Distribution<float>::emd (
+            Distribution<float>::emd8 (
                 pkmeans.distributions[x],
-                pkmeans.clusters[pkmeans.getCluster (x)]
+                pkmeans.clusters[pkmeans.getCluster (x)],
+                pkmeans.denom
             ),
             pkmeans.upperBounds[x]
         );
@@ -342,6 +346,7 @@ TEST_F (PKMeansTests, NeedsClusterUpdate) {
     for (size_t i = 0; i < pkmeans.distributions.size (); i++) {
         pkmeans.distributions[i].fill (0.0);
     }
+    pkmeans.denom = 2 * 49;
     pkmeans.distributions[0][0] = 1.0;
     pkmeans.distributions[0][49] = 1.0;
     pkmeans.distributions[1][1] = 1.0;
@@ -413,10 +418,12 @@ TEST_F (PKMeansTests, NeedsClusterUpdate) {
     }
 }
 
+// TODO: Fix this test to reflect new implementation
 TEST_F (PKMeansTests, FindClosestInitCluster) {
     for (size_t i = 0; i < pkmeans.distributions.size (); i++) {
         pkmeans.distributions[i].fill (0.0);
     }
+    pkmeans.denom = 2 * 49;
     pkmeans.distributions[0][0] = 1.0;
     pkmeans.distributions[0][49] = 1.0;
     pkmeans.distributions[1][1] = 1.0;
@@ -446,10 +453,12 @@ TEST_F (PKMeansTests, FindClosestInitCluster) {
     EXPECT_EQ (1, pkmeans.findClosestInitCluster (3));
 }
 
+// TODO: Fix this test to reflect new implementation
 TEST_F (PKMeansTests, GetCluster) {
     for (size_t i = 0; i < pkmeans.distributions.size (); i++) {
         pkmeans.distributions[i].fill (0.0);
     }
+    pkmeans.denom = 2 * 49;
     pkmeans.distributions[0][0] = 1.0;
     pkmeans.distributions[0][49] = 1.0;
     pkmeans.distributions[1][1] = 1.0;
@@ -492,9 +501,10 @@ TEST_F (PKMeansTests, ComputeDcDist) {
     for (size_t x = 0; x < pkmeans.distributions.size (); x++)
     for (size_t c = 0; c < pkmeans.clusters.size (); c++) {
         EXPECT_EQ (
-            Distribution<float>::emd (
+            Distribution<float>::emd8 (
                 pkmeans.distributions[x],
-                pkmeans.clusters[c]
+                pkmeans.clusters[c],
+                pkmeans.denom
             ),
             pkmeans.computeDcDist (x, c)
         );
@@ -515,9 +525,10 @@ TEST_F (PKMeansTests, CDist) {
     for (size_t c1 = 0; c1 < pkmeans.clusters.size (); c1++)
     for (size_t c2 = 0; c2 < pkmeans.clusters.size (); c2++) {
         EXPECT_EQ (
-            Distribution<float>::emd (
+            Distribution<float>::emd8 (
                 pkmeans.clusters[c1],
-                pkmeans.clusters[c2]
+                pkmeans.clusters[c2],
+                pkmeans.denom
             ),
             pkmeans.cDist(c1, c2)
         );
@@ -528,6 +539,7 @@ TEST_F (PKMeansTests, FindClosestCluster) {
     for (size_t i = 0; i < pkmeans.distributions.size (); i++) {
         pkmeans.distributions[i].fill (0.0);
     }
+    pkmeans.denom = 2 * 49;
     pkmeans.distributions[0][0] = 1.0;
     pkmeans.distributions[0][49] = 1.0;
     pkmeans.distributions[1][1] = 1.0;
@@ -591,6 +603,7 @@ TEST_F (PKMeansTests, AssignDistributions) {
     for (size_t i = 0; i < pkmeans.distributions.size (); i++) {
         pkmeans.distributions[i].fill (0.0);
     }
+    pkmeans.denom = 2 * 49;
     pkmeans.distributions[0][0] = 1.0;
     pkmeans.distributions[0][49] = 1.0;
     pkmeans.distributions[1][1] = 1.0;
@@ -659,6 +672,7 @@ TEST_F (PKMeansTests, ComputeClusterMean) {
     for (size_t i = 0; i < pkmeans.distributions.size (); i++) {
         pkmeans.distributions[i].fill (0.0);
     }
+    pkmeans.denom = 2 * 49;
     pkmeans.distributions[0][0] = 1.0;
     pkmeans.distributions[0][49] = 1.0;
     pkmeans.distributions[1][1] = 1.0;
@@ -704,6 +718,7 @@ TEST_F (PKMeansTests, ComputeNewClusters) {
     for (size_t i = 0; i < pkmeans.distributions.size (); i++) {
         pkmeans.distributions[i].fill (0.0);
     }
+    pkmeans.denom = 2 * 49;
     pkmeans.distributions[0][0] = 1.0;
     pkmeans.distributions[0][49] = 1.0;
     pkmeans.distributions[1][1] = 1.0;
@@ -748,6 +763,7 @@ TEST_F (PKMeansTests, CalcObjFn) {
     for (size_t i = 0; i < pkmeans.distributions.size (); i++) {
         pkmeans.distributions[i].fill (0.0);
     }
+    pkmeans.denom = 2 * 49;
     pkmeans.distributions[0][0] = 1.0;
     pkmeans.distributions[0][49] = 1.0;
     pkmeans.distributions[1][1] = 1.0;

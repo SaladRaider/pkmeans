@@ -265,7 +265,7 @@ void PKMeans::assignDistributions () {
 }
 
 void* PKMeans::assignDistributionsThread (void *args) {
-    AssignThreadArgs *threadArgs = (AssignThreadArgs*) args;
+    ThreadArgs *threadArgs = (ThreadArgs*) args;
     PKMeans *pkmeans = (PKMeans*) threadArgs->_this;
     for (size_t x = threadArgs->start; x < threadArgs->end; x++) {
         pkmeans->findClosestCluster (x);
@@ -293,7 +293,7 @@ void PKMeans::computeNewClusters () {
 }
 
 void* PKMeans::computeNewClustersThread (void *args) {
-    AssignThreadArgs *threadArgs = (AssignThreadArgs*) args;
+    ThreadArgs *threadArgs = (ThreadArgs*) args;
     PKMeans *pkmeans = (PKMeans*) threadArgs->_this;
     for (size_t c = threadArgs->start; c < threadArgs->end; c++) {
         pkmeans->computeClusterMean (c);
@@ -412,13 +412,36 @@ void PKMeans::computeClusterDists () {
 }
 
 void PKMeans::computeLowerBounds () {
-    for (size_t c = 0; c < clusters.size (); c++)
-    for (size_t x = 0; x < distributions.size (); x++)
-        lowerBounds[x][c] = fmax (
-            lowerBounds[x][c] - Distribution<float>::emd8 (
-                clusters[c], newClusters[c], denom
-            ), 0
-        );
+    if (threads.size () > 1) {
+        runThreads (clusters.size (),
+                    PKMeans::computeLowerBoundsThread);
+    } else {
+        std::uint8_t dist;
+        for (size_t c = 0; c < clusters.size (); c++) {
+            dist = Distribution<float>::emd8 (
+                clusters[c], newClusters[c], denom);
+            for (size_t x = 0; x < distributions.size (); x++)
+                lowerBounds[x][c] = fmax (
+                    lowerBounds[x][c] - dist, 0
+                );
+        }
+    }
+}
+
+void* PKMeans::computeLowerBoundsThread (void* args) {
+    ThreadArgs *threadArgs = (ThreadArgs*) args;
+    PKMeans *pkmeans = (PKMeans*) threadArgs->_this;
+    std::uint8_t dist;
+    for (size_t c = threadArgs->start; c < threadArgs->end; c++) {
+        dist = Distribution<float>::emd8 (
+            pkmeans->clusters[c], pkmeans->newClusters[c],
+            pkmeans->denom);
+        for (size_t x = 0; x < pkmeans->distributions.size (); x++) {
+            pkmeans->lowerBounds[x][c] = fmax (
+                pkmeans->lowerBounds[x][c] - dist, 0);
+        }
+    }
+    pthread_exit (NULL);
 }
 
 void PKMeans::computeUpperBounds () {

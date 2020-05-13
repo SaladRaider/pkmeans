@@ -8,12 +8,12 @@
 #include <cstdint>
 
 namespace pkmeans {
-struct AssignThreadArgs {
+struct ThreadArgs {
     void *_this = nullptr;
     size_t start = 0;
     size_t end = 0;
 
-    AssignThreadArgs (void *__this, size_t _start, size_t _end) {
+    ThreadArgs (void *__this, size_t _start, size_t _end) {
         _this = __this;
         start = _start;
         end = _end;
@@ -33,7 +33,7 @@ class PKMeans {
         std::vector<std::uint8_t> sDists;
         std::vector<bool> upperBoundNeedsUpdate;
         std::vector<pthread_t> threads;
-        std::vector<AssignThreadArgs> threadArgs;
+        std::vector<ThreadArgs> threadArgs;
         pthread_attr_t threadAttr;
         bool converged = false;
         size_t denom = 1;
@@ -77,6 +77,7 @@ class PKMeans {
         float calcObjFn ();
         static void* assignDistributionsThread (void *args);
         static void* computeNewClustersThread (void *args);
+        static void* computeLowerBoundsThread (void *args);
 
         // test friend functions
         friend class PKMeansTests;
