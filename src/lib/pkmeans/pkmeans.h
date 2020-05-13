@@ -41,6 +41,7 @@ class PKMeans {
         void saveAssignments (std::string outFilename);
         void initThreads (int numThreads);
         void startThread (size_t tid, void* (*fn)(void*));
+        void runThreads (size_t size, void* (*fn)(void*));
         void joinThreads ();
         void initClusters (int numClusters);
         void initNewClusters ();
@@ -73,6 +74,7 @@ class PKMeans {
         float cDist (size_t c1, size_t c2);
         float calcObjFn ();
         static void* assignDistributionsThread (void *args);
+        static void* computeNewClustersThread (void *args);
 
         // test friend functions
         friend class PKMeansTests;

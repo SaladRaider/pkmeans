@@ -70,6 +70,22 @@ void PKMeans::startThread (size_t tid, void* (*fn)(void*)) {
     }
 }
 
+void PKMeans::runThreads (size_t size, void* (*fn)(void*)) {
+    size_t itemsPerThread = size / threads.size ();
+    size_t i = 0;
+    size_t tid = 0;
+    for (tid = 0; tid < threads.size () - 1; tid++) {
+        threadArgs[tid].start = i;
+        i += itemsPerThread;
+        threadArgs[tid].end = i;
+        startThread (tid, fn);
+    }
+    threadArgs[tid].start = i;
+    threadArgs[tid].end = size;
+    startThread (tid, fn);
+    joinThreads ();
+}
+
 void PKMeans::joinThreads () {
     int rc;
     void *status;
@@ -235,19 +251,8 @@ void PKMeans::assignDistributions () {
     converged = true;
     clearClusterAssignments ();
     if (threads.size () > 1) {
-        size_t rowsPerThread = distributions.size () / threads.size ();
-        size_t x = 0;
-        size_t tid = 0;
-        for (tid = 0; tid < threads.size () - 1; tid++) {
-            threadArgs[tid].start = x;
-            x += rowsPerThread;
-            threadArgs[tid].end = x;
-            startThread (tid, PKMeans::assignDistributionsThread);
-        }
-        threadArgs[tid].start = x;
-        threadArgs[tid].end = distributions.size ();
-        startThread (tid, PKMeans::assignDistributionsThread);
-        joinThreads ();
+        runThreads (distributions.size (),
+                    PKMeans::assignDistributionsThread);
     } else {
         for (size_t x = 0; x < distributions.size (); x++) {
             findClosestCluster (x);
@@ -276,9 +281,23 @@ void PKMeans::computeClusterMean (size_t c) {
 }
 
 void PKMeans::computeNewClusters () {
-    for (size_t c = 0; c < clusters.size (); c++) {
-        computeClusterMean (c);
+    if (threads.size () > 1) {
+        runThreads (clusters.size (),
+                    PKMeans::computeNewClustersThread);
+    } else {
+        for (size_t c = 0; c < clusters.size (); c++) {
+            computeClusterMean (c);
+        }
     }
+}
+
+void* PKMeans::computeNewClustersThread (void *args) {
+    AssignThreadArgs *threadArgs = (AssignThreadArgs*) args;
+    PKMeans *pkmeans = (PKMeans*) threadArgs->_this;
+    for (size_t c = threadArgs->start; c < threadArgs->end; c++) {
+        pkmeans->computeClusterMean (c);
+    }
+    pthread_exit (NULL);
 }
 
 float PKMeans::calcObjFn () {
@@ -392,8 +411,8 @@ void PKMeans::computeClusterDists () {
 }
 
 void PKMeans::computeLowerBounds () {
-    for (size_t x = 0; x < distributions.size (); x++)
     for (size_t c = 0; c < clusters.size (); c++)
+    for (size_t x = 0; x < distributions.size (); x++)
         lowerBounds[x][c] = fmax (
             lowerBounds[x][c] - Distribution<float>::emd (
                 clusters[c], newClusters[c]
