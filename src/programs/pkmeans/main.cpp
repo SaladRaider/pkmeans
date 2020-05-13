@@ -1,6 +1,7 @@
 #include <iostream>
 #include <boost/program_options.hpp>
 #include <pkmeans/pkmeans.h>
+#include <pkmeans/pkmeans_lowmem.h>
 #include <string>
 #include <time.h>
 #include <memory>
@@ -18,7 +19,8 @@ int main(int argc, char **argv) {
         ("threads,t",           po::value<unsigned int> ()->default_value (1),                      "number of threads")
         ("in_filename,i",       po::value<std::string> ()->default_value ("in.txt"),                "input filename for distributions")
         ("assignments_out,a",   po::value<std::string> ()->default_value ("assignments_out.txt"),   "cluster assignments to distributions output filename")
-        ("clusters_out,c",      po::value<std::string> ()->default_value ("clusters_out.txt"),      "clusters output filename");
+        ("clusters_out,c",      po::value<std::string> ()->default_value ("clusters_out.txt"),      "clusters output filename")
+        ("low_mem,l",           "use low memory version");
 
     po::variables_map vm;
     po::store (po::command_line_parser (argc, argv)
@@ -40,12 +42,19 @@ int main(int argc, char **argv) {
     std::string inFilename = vm["in_filename"].as<std::string> ();
     std::string assignmentsOut = vm["assignments_out"].as<std::string> ();
     std::string clustersOut = vm["clusters_out"].as<std::string> ();
+    bool lowMem = vm.count("low_mem") > 0;
 
     // set rand seed
     srand (time (NULL));
 
-    auto pkmeans = std::make_unique<PKMeans> ();
-    pkmeans->run (numClusters, numThreads, inFilename,
-                 assignmentsOut, clustersOut);
+    if (lowMem) {
+        auto pkmeans = std::make_unique<PKMeansLowMem> ();
+        pkmeans->run (numClusters, numThreads, inFilename,
+                     assignmentsOut, clustersOut);
+    } else {
+        auto pkmeans = std::make_unique<PKMeans> ();
+        pkmeans->run (numClusters, numThreads, inFilename,
+                     assignmentsOut, clustersOut);
+    }
     return 0;
 }
