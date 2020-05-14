@@ -6,34 +6,71 @@
 #include <sys/types.h>
 #include <tgmath.h>
 
+#include <algorithm>
 #include <fstream>
+#include <limits>
 #include <string>
-#include <unordered_set>
 
 using namespace pkmeans;
 
-void PKMeans::run(int numClusters, int numThreads, std::string inFilename,
-                  std::string assignmentsOut, std::string clustersOut) {
-  printf("Running pkmeans with args (k=%d, t=%d, i=%s, a=%s, c=%s)\n",
-         numClusters, numThreads, inFilename.c_str(), assignmentsOut.c_str(),
-         clustersOut.c_str());
+void PKMeans::run(int numClusters, int numThreads, float _confidenceProb,
+                  float _maxMissingMass, size_t _seed, bool useTimeSeed,
+                  const std::string &inFilename,
+                  const std::string &assignmentsOut,
+                  const std::string &clustersOut, bool _quiet) {
+  if (useTimeSeed)
+    seed = time(NULL);
+  else
+    seed = _seed;
+  confidenceProb = _confidenceProb;
+  maxMissingMass = _maxMissingMass;
+  quiet = _quiet;
+  printf(
+      "Running pkmeans with args (k=%d, t=%d, p=%f, m=%f, s=%ld, i=%s, a=%s, "
+      "c=%s)\n",
+      numClusters, numThreads, _confidenceProb, _maxMissingMass, seed,
+      inFilename.c_str(), assignmentsOut.c_str(), clustersOut.c_str());
+
+  readDistributions(inFilename);
+  initThreads(numThreads);
+
+  unsigned int numIterations = 0;
+  bestError = std::numeric_limits<float>::max();
+  do {
+    reset();
+    runOnce(numClusters, assignmentsOut, clustersOut);
+  } while (maxMissingMass <= getMissingMass());
+  pthread_attr_destroy(&threadAttr);
+
+  printf("pkmeans finished running with %u restarts.\n", numIterations);
+}
+
+void PKMeans::runOnce(int numClusters, const std::string &assignmentsOut,
+                      const std::string &clustersOut) {
+  // set rand seed
+  srand(seed);
+  if (!quiet)
+    printf("Starting kmeans\n");
 
   unsigned int numIterations = 1;
-  initThreads(numThreads);
-  readDistributions(inFilename);
-  printf("done reading file.\n");
+  if (!quiet)
+    printf("done reading file.\n");
   initClusters(numClusters);
-  printf("done intializing centroids.\n");
+  if (!quiet)
+    printf("done intializing centroids.\n");
   initNewClusters();
   initUpperBoundNeedsUpdate();
   initUpperBounds();
-  printf("done intializing.\n");
+  if (!quiet)
+    printf("done intializing.\n");
   computeNewClusters();
   computeLowerBounds();
   computeUpperBounds();
   resetUpperBoundNeedsUpdate();
   assignNewClusters();
-  printf("Error is %f\n", calcObjFn());
+  auto objError = calcObjFn();
+  if (!quiet)
+    printf("Error is %f\n", objError);
   while (!converged) {
     computeClusterDists();
     assignDistributions();
@@ -42,14 +79,64 @@ void PKMeans::run(int numClusters, int numThreads, std::string inFilename,
     computeUpperBounds();
     resetUpperBoundNeedsUpdate();
     assignNewClusters();
-    printf("Error is %f\n", calcObjFn());
+    objError = calcObjFn();
+    if (!quiet)
+      printf("Error is %f\n", objError);
     numIterations += 1;
   }
-  saveAssignments(assignmentsOut);
-  saveClusters(clustersOut);
-  pthread_attr_destroy(&threadAttr);
+  if (objError < bestError) {
+    bestError = objError;
+    saveAssignments(assignmentsOut);
+    saveClusters(clustersOut);
+  }
+  markClustersObserved();
+  if (!quiet)
+    printf("best error: %f\n", bestError);
+  if (!quiet)
+    printf("finished one run with seed %ld and %u iterations.\n", seed,
+           numIterations);
+  seed += 1;
+}
 
-  printf("pkmeans finished running with %u iterations.\n", numIterations);
+void PKMeans::markClustersObserved() {
+  numObservedLocalMin[hashClusters()] += 1;
+  if (!quiet)
+    printf("numObservedLocalMin[%zu] = %zu\n", hashClusters(),
+           numObservedLocalMin[hashClusters()]);
+}
+
+size_t PKMeans::hashClusters() {
+  std::vector<size_t> clusterHashes;
+  for (auto c = 0; c < clusters.size(); c++) {
+    clusterHashes.emplace_back(clusters[c].hash());
+  }
+  std::sort(clusterHashes.begin(), clusterHashes.end());
+  return boost::hash_range(clusterHashes.begin(), clusterHashes.end());
+}
+
+float PKMeans::getMissingMass() {
+  auto G = 0.f;
+  constexpr auto A =
+      2.f * 1.41421356237f + 1.73205080757f;  // 2*sqrt(2) + sqrt(3)
+  for (auto e : numObservedLocalMin) G += e.second == 1;
+  G /= numObservedLocalMin.size();
+  auto B = A * sqrt(log(3.f / confidenceProb) / numObservedLocalMin.size());
+  auto missingMass = G / numObservedLocalMin.size() + B;
+  printf("G: %f, B: %f, missingMass: %f, maxMissingMass: %f n: %ld\n", G, B,
+         missingMass, maxMissingMass, numObservedLocalMin.size());
+  return missingMass;
+}
+
+void PKMeans::reset() {
+  clusters.clear();
+  newClusters.clear();
+  clusterAssignments.clear();
+  lowerBounds.clear();
+  upperBounds.clear();
+  clusterDists.clear();
+  sDists.clear();
+  upperBoundNeedsUpdate.clear();
+  converged = false;
 }
 
 void PKMeans::initThreads(int numThreads) {
@@ -98,7 +185,7 @@ void PKMeans::joinThreads() {
   }
 }
 
-void PKMeans::readDistributions(std::string inFilename) {
+void PKMeans::readDistributions(const std::string &inFilename) {
   const auto BUFFER_SIZE = 16 * 1024;
   const auto STR_SIZE = 64;
   int fd = open(inFilename.c_str(), O_RDONLY);
@@ -147,7 +234,7 @@ void PKMeans::readDistributions(std::string inFilename) {
   denom = (distributions[0].size() - 1) * distributions[0].sum();
 }
 
-void PKMeans::saveClusters(std::string outFilename) {
+void PKMeans::saveClusters(const std::string &outFilename) {
   std::ofstream f;
   f.open(outFilename);
   for (size_t c = 0; c < clusters.size(); c++) {
@@ -156,7 +243,7 @@ void PKMeans::saveClusters(std::string outFilename) {
   f.close();
 }
 
-void PKMeans::saveAssignments(std::string outFilename) {
+void PKMeans::saveAssignments(const std::string &outFilename) {
   std::ofstream f;
   f.open(outFilename);
   for (size_t c = 0; c < clusterAssignments.size(); c++) {

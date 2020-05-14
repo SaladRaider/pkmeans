@@ -6,7 +6,9 @@
 #include <pthread.h>
 
 #include <cstdint>
+#include <limits>
 #include <string>
+#include <unordered_map>
 
 namespace pkmeans {
 struct ThreadArgs {
@@ -23,6 +25,7 @@ struct ThreadArgs {
 
 class PKMeans {
  private:
+  std::unordered_map<size_t, size_t> numObservedLocalMin;
   std::vector<Distribution<float>> clusters;
   std::vector<Distribution<float>> newClusters;
   std::vector<Distribution<float>> distributions;
@@ -37,11 +40,16 @@ class PKMeans {
   std::vector<ThreadArgs> threadArgs;
   pthread_attr_t threadAttr;
   bool converged = false;
+  bool quiet;
   size_t denom = 1;
+  size_t seed;
+  float maxMissingMass;
+  float confidenceProb;
+  float bestError = std::numeric_limits<float>::max();
 
-  void readDistributions(std::string inFileName);
-  void saveClusters(std::string outFilename);
-  void saveAssignments(std::string outFilename);
+  void readDistributions(const std::string& inFileName);
+  void saveClusters(const std::string& outFilename);
+  void saveAssignments(const std::string& outFilename);
   void initThreads(int numThreads);
   void startThread(size_t tid, void* (*fn)(void*));
   void runThreads(size_t size, void* (*fn)(void*));
@@ -68,11 +76,15 @@ class PKMeans {
   void computeLowerBounds();
   void computeUpperBounds();
   void computeClusterMean(size_t c);
+  void markClustersObserved();
+  void reset();
   bool needsClusterUpdateApprox(size_t x, size_t c);
   bool needsClusterUpdate(size_t x, size_t c);
   size_t findClosestCluster(size_t x);
   size_t findClosestInitCluster(size_t x);
   size_t getCluster(size_t x);
+  size_t hashClusters();
+  float getMissingMass();
   std::uint8_t computeDcDist(size_t x, size_t c);
   std::uint8_t cDist(size_t c1, size_t c2);
   float calcObjFn();
@@ -113,8 +125,13 @@ class PKMeans {
   FRIEND_TEST(PKMeansTests, CDist);
 
  public:
-  void run(int numClusters, int numThreads, std::string inFilename,
-           std::string assignmentsOutFilename, std::string clustersOutFilename);
+  void run(int numClusters, int numThreads, float confidenceProb,
+           float maxMissingMass, size_t _seed, bool useTimeSeed,
+           const std::string& inFilename,
+           const std::string& assignmentsOutFilename,
+           const std::string& clustersOutFilename, bool quiet);
+  void runOnce(int numClusters, const std::string& assignmentsOutFilename,
+               const std::string& clustersOutFilename);
 };
 }  // namespace pkmeans
 

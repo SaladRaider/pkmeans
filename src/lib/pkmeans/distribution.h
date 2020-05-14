@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <sstream>
 #include <vector>
+#include <boost/functional/hash.hpp>
 
 namespace pkmeans {
 template <class T>
@@ -21,6 +22,10 @@ struct Distribution {
   void clear() { buckets.clear(); }
 
   size_t size() const { return buckets.size(); };
+
+  size_t hash() const {
+    return boost::hash_range(buckets.begin(), buckets.end());
+  }
 
   void fill(T value) { std::fill(buckets.begin(), buckets.end(), value); };
 

@@ -22,7 +22,11 @@ int main(int argc, char **argv) {
     ("in_filename,i",       po::value<std::string> ()->default_value ("in.txt"),                "input filename for distributions")
     ("assignments_out,a",   po::value<std::string> ()->default_value ("assignments_out.txt"),   "cluster assignments to distributions output filename")
     ("clusters_out,c",      po::value<std::string> ()->default_value ("clusters_out.txt"),      "clusters output filename")
-    ("low_mem,l",           "use low memory version");
+    ("confidence_prob,p",   po::value<float> ()->default_value       (0.1f),                    "confidence probability of the stopping criteria upper bound for random restarts")
+    ("missing_mass,m",      po::value<float> ()->default_value       (0.1f),                    "maximum acceptable missing mass for random restarts")
+    ("seed,s",              po::value<size_t> ()->default_value      (size_t(-1)),              "starting random seed")
+    ("low_mem,l",           "use low memory version")
+    ("quiet,q",             "reduce logs in console.");
 
   po::variables_map vm;
   po::store(po::command_line_parser(argc, argv)
@@ -38,15 +42,17 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  const unsigned int numClusters = vm["clusters"].as<unsigned int>();
-  const unsigned int numThreads = vm["threads"].as<unsigned int>();
-  std::string inFilename = vm["in_filename"].as<std::string>();
-  std::string assignmentsOut = vm["assignments_out"].as<std::string>();
-  std::string clustersOut = vm["clusters_out"].as<std::string>();
-  bool lowMem = vm.count("low_mem") > 0;
-
-  // set rand seed
-  srand(time(NULL));
+  const auto numClusters = vm["clusters"].as<unsigned int>();
+  const auto numThreads = vm["threads"].as<unsigned int>();
+  const auto confidenceProb = vm["confidence_prob"].as<float>();
+  const auto missingMass = vm["missing_mass"].as<float>();
+  const auto seed = vm["seed"].as<size_t>();
+  const auto useTimeSeed = size_t(-1) == seed;
+  const auto inFilename = vm["in_filename"].as<std::string>();
+  const auto assignmentsOut = vm["assignments_out"].as<std::string>();
+  const auto clustersOut = vm["clusters_out"].as<std::string>();
+  const auto lowMem = vm.count("low_mem") > 0;
+  const auto quiet = vm.count("quiet") > 0;
 
   if (lowMem) {
     auto pkmeans = std::make_unique<PKMeansLowMem>();
@@ -54,8 +60,8 @@ int main(int argc, char **argv) {
                  clustersOut);
   } else {
     auto pkmeans = std::make_unique<PKMeans>();
-    pkmeans->run(numClusters, numThreads, inFilename, assignmentsOut,
-                 clustersOut);
+    pkmeans->run(numClusters, numThreads, confidenceProb, missingMass, seed,
+                 useTimeSeed, inFilename, assignmentsOut, clustersOut, quiet);
   }
   return 0;
 }
