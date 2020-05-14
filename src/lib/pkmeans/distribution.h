@@ -1,212 +1,199 @@
 #ifndef __DISTRIBUTION_H_INCLUDED_
 #define __DISTRIBUTION_H_INCLUDED_
 
-#include <vector>
-#include <sstream>
-#include <algorithm>
 #include <tgmath.h>
+
+#include <algorithm>
+#include <sstream>
+#include <vector>
 
 namespace pkmeans {
 template <class T>
 struct Distribution {
-    private:
-        std::vector<T> buckets;
-    public:
-        Distribution () {};
+ private:
+  std::vector<T> buckets;
 
-        void emplace_back (const T &val) {
-            buckets.emplace_back (val);
-        }
+ public:
+  Distribution(){};
 
-        void clear () {
-            buckets.clear ();
-        }
+  void emplace_back(const T& val) { buckets.emplace_back(val); }
 
-        size_t size () const {
-            return buckets.size ();
-        };
+  void clear() { buckets.clear(); }
 
-        void fill (T value) {
-            std::fill (buckets.begin (), buckets.end (), value);
-        };
+  size_t size() const { return buckets.size(); };
 
-        void fill (T value, size_t N) {
-            buckets.clear ();
-            for (size_t i = 0; i < N; i++)
-                buckets.emplace_back (value);
-        };
+  void fill(T value) { std::fill(buckets.begin(), buckets.end(), value); };
 
-        T sum () const {
-            T retSum = 0;
-            for (size_t i = 0; i < size (); i++) {
-                retSum += buckets[i];
-            }
-            return retSum;
-        }
+  void fill(T value, size_t N) {
+    buckets.clear();
+    for (size_t i = 0; i < N; i++) buckets.emplace_back(value);
+  };
 
-        T absSum () const {
-            T retSum = 0;
-            for (size_t i = 0; i < size (); i++) {
-                retSum += fabs (buckets[i]);
-            }
-            return retSum;
-        }
+  T sum() const {
+    T retSum = 0;
+    for (size_t i = 0; i < size(); i++) {
+      retSum += buckets[i];
+    }
+    return retSum;
+  }
 
-        T& operator[] (size_t idx) {
-            return buckets[idx];
-        };
+  T absSum() const {
+    T retSum = 0;
+    for (size_t i = 0; i < size(); i++) {
+      retSum += fabs(buckets[i]);
+    }
+    return retSum;
+  }
 
-        const T& operator[] (size_t idx) const {
-            return buckets[idx];
-        };
+  T& operator[](size_t idx) { return buckets[idx]; };
 
-        Distribution& operator= (const Distribution &other) {
-            if (this != &other) {
-                buckets = other.buckets;
-            }
-            return *this;
-        }
+  const T& operator[](size_t idx) const { return buckets[idx]; };
 
-        Distribution& operator+= (const Distribution &other) {
-            for (size_t i = 0; i < size (); i++) {
-                buckets[i] += other.buckets[i];
-            }
-            return *this;
-        }
+  Distribution& operator=(const Distribution& other) {
+    if (this != &other) {
+      buckets = other.buckets;
+    }
+    return *this;
+  }
 
-        Distribution& operator-= (const Distribution &other) {
-            for (size_t i = 0; i < size (); i++) {
-                buckets[i] -= other.buckets[i];
-            }
-            return *this;
-        };
+  Distribution& operator+=(const Distribution& other) {
+    for (size_t i = 0; i < size(); i++) {
+      buckets[i] += other.buckets[i];
+    }
+    return *this;
+  }
 
-        Distribution& operator*= (const Distribution &other) {
-            for (size_t i = 0; i < size (); i++) {
-                buckets[i] *= other.buckets[i];
-            }
-            return *this;
-        };
+  Distribution& operator-=(const Distribution& other) {
+    for (size_t i = 0; i < size(); i++) {
+      buckets[i] -= other.buckets[i];
+    }
+    return *this;
+  };
 
-        Distribution& operator*= (const T &rhs) {
-            for (size_t i = 0; i < size (); i++) {
-                buckets[i] *= rhs;
-            }
-            return *this;
-        };
+  Distribution& operator*=(const Distribution& other) {
+    for (size_t i = 0; i < size(); i++) {
+      buckets[i] *= other.buckets[i];
+    }
+    return *this;
+  };
 
-        Distribution& operator/= (const Distribution &other) {
-            for (size_t i = 0; i < size (); i++) {
-                buckets[i] /= other.buckets[i];
-            }
-            return *this;
-        };
+  Distribution& operator*=(const T& rhs) {
+    for (size_t i = 0; i < size(); i++) {
+      buckets[i] *= rhs;
+    }
+    return *this;
+  };
 
-        Distribution& operator/= (const T &rhs) {
-            for (size_t i = 0; i < size (); i++) {
-                buckets[i] /= rhs;
-            }
-            return *this;
-        };
+  Distribution& operator/=(const Distribution& other) {
+    for (size_t i = 0; i < size(); i++) {
+      buckets[i] /= other.buckets[i];
+    }
+    return *this;
+  };
 
-        friend bool operator== (const Distribution &lhs, const Distribution &rhs) {
-            if (lhs.size () != rhs.size ())
-                return false;
-            for (size_t i = 0; i < lhs.size (); i++) {
-                if (lhs[i] != rhs[i])
-                    return false;
-            }
-            return true;
-        }
+  Distribution& operator/=(const T& rhs) {
+    for (size_t i = 0; i < size(); i++) {
+      buckets[i] /= rhs;
+    }
+    return *this;
+  };
 
-        friend bool operator!= (const Distribution &lhs, const Distribution &rhs) {
-            return !(lhs == rhs);
-        }
+  friend bool operator==(const Distribution& lhs, const Distribution& rhs) {
+    if (lhs.size() != rhs.size()) return false;
+    for (size_t i = 0; i < lhs.size(); i++) {
+      if (lhs[i] != rhs[i]) return false;
+    }
+    return true;
+  }
 
-        friend std::istream& operator>> (std::istream &is, Distribution &obj) {
-            T tempVal;
-            std::string buf;
-            std::getline (is, buf);
-            std::istringstream iss (buf);
-            while (iss) {
-                if (!(iss >> tempVal))
-                    break;
-                obj.buckets.push_back (tempVal);
-            }
-            return is;
-        };
+  friend bool operator!=(const Distribution& lhs, const Distribution& rhs) {
+    return !(lhs == rhs);
+  }
 
-        friend std::ostream& operator<< (std::ostream &os, const Distribution &obj) {
-            for (size_t i = 0; i < obj.buckets.size () - 1; i++) {
-                os << obj.buckets[i] << ' ';
-            }
-            os << obj.buckets[obj.buckets.size () - 1];
-            return os;
-        };
+  friend std::istream& operator>>(std::istream& is, Distribution& obj) {
+    T tempVal;
+    std::string buf;
+    std::getline(is, buf);
+    std::istringstream iss(buf);
+    while (iss) {
+      if (!(iss >> tempVal)) break;
+      obj.buckets.push_back(tempVal);
+    }
+    return is;
+  };
 
-        friend Distribution operator+ (Distribution lhs, const Distribution &rhs) {
-            lhs += rhs;
-            return lhs;
-        };
+  friend std::ostream& operator<<(std::ostream& os, const Distribution& obj) {
+    for (size_t i = 0; i < obj.buckets.size() - 1; i++) {
+      os << obj.buckets[i] << ' ';
+    }
+    os << obj.buckets[obj.buckets.size() - 1];
+    return os;
+  };
 
-        friend Distribution operator- (Distribution lhs, const Distribution &rhs) {
-            lhs -= rhs;
-            return lhs;
-        };
+  friend Distribution operator+(Distribution lhs, const Distribution& rhs) {
+    lhs += rhs;
+    return lhs;
+  };
 
-        friend Distribution operator* (Distribution lhs, const Distribution &rhs) {
-            lhs *= rhs;
-            return lhs;
-        };
+  friend Distribution operator-(Distribution lhs, const Distribution& rhs) {
+    lhs -= rhs;
+    return lhs;
+  };
 
-        friend Distribution operator* (Distribution lhs, const T &rhs) {
-            for (size_t i = 0; i < lhs.size (); i++) {
-                lhs.buckets[i] *= rhs;
-            }
-            return lhs;
-        };
+  friend Distribution operator*(Distribution lhs, const Distribution& rhs) {
+    lhs *= rhs;
+    return lhs;
+  };
 
-        friend Distribution operator* (const T &lhs, Distribution rhs) {
-            for (size_t i = 0; i < rhs.size (); i++) {
-                rhs.buckets[i] *= lhs;
-            }
-            return rhs;
-        };
+  friend Distribution operator*(Distribution lhs, const T& rhs) {
+    for (size_t i = 0; i < lhs.size(); i++) {
+      lhs.buckets[i] *= rhs;
+    }
+    return lhs;
+  };
 
-        friend Distribution operator/ (Distribution lhs, const Distribution &rhs) {
-            lhs /= rhs;
-            return lhs;
-        };
+  friend Distribution operator*(const T& lhs, Distribution rhs) {
+    for (size_t i = 0; i < rhs.size(); i++) {
+      rhs.buckets[i] *= lhs;
+    }
+    return rhs;
+  };
 
-        friend Distribution operator/ (Distribution lhs, const T &rhs) {
-            for (size_t i = 0; i < lhs.size (); i++) {
-                lhs.buckets[i] /= rhs;
-            }
-            return lhs;
-        };
+  friend Distribution operator/(Distribution lhs, const Distribution& rhs) {
+    lhs /= rhs;
+    return lhs;
+  };
 
-        friend Distribution operator/ (const T &lhs, Distribution rhs) {
-            for (size_t i = 0; i < rhs.size (); i++) {
-                rhs.buckets[i] /= lhs;
-            }
-            return rhs;
-        };
+  friend Distribution operator/(Distribution lhs, const T& rhs) {
+    for (size_t i = 0; i < lhs.size(); i++) {
+      lhs.buckets[i] /= rhs;
+    }
+    return lhs;
+  };
 
-        static float emd (const Distribution &d1, const Distribution &d2) {
-            float emd_i = 0.0;
-            float sum = 0.0;
-            for (size_t i = 0; i < d1.size (); i++) {
-                emd_i += d1.buckets[i] - d2.buckets[i];
-                sum += fabs (emd_i);
-            }
-            return sum;
-        };
+  friend Distribution operator/(const T& lhs, Distribution rhs) {
+    for (size_t i = 0; i < rhs.size(); i++) {
+      rhs.buckets[i] /= lhs;
+    }
+    return rhs;
+  };
 
-        static std::uint8_t emd8 (const Distribution &d1, const Distribution &d2, size_t denom) {
-            float sum = emd (d1, d2);
-            return sum * 255 / denom;
-        };
+  static float emd(const Distribution& d1, const Distribution& d2) {
+    float emd_i = 0.0;
+    float sum = 0.0;
+    for (size_t i = 0; i < d1.size(); i++) {
+      emd_i += d1.buckets[i] - d2.buckets[i];
+      sum += fabs(emd_i);
+    }
+    return sum;
+  };
+
+  static std::uint8_t emd8(const Distribution& d1, const Distribution& d2,
+                           size_t denom) {
+    float sum = emd(d1, d2);
+    return sum * 255 / denom;
+  };
 };
-}
+}  // namespace pkmeans
 
-#endif // __DISTRIBUTION_H_INCLUDED_
+#endif  // __DISTRIBUTION_H_INCLUDED_
