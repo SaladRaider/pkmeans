@@ -18,7 +18,7 @@ add_definitions("-fPIC")
 enable_testing()
 
 add_compile_options(-D_FORTIFY_SOURCE=2 -D_GLBICXX_ASSERTIONS
-    -fasynchronous-unwind-tables -fexceptions -fpie -fpic -fstack-protector -grecord-gcc-switches -O3 -pipe -std=c++14)
+    -fasynchronous-unwind-tables -fexceptions -fpie -fpic -fstack-protector -grecord-gcc-switches -O3 -pipe -std=c++14 -fopenmp -openmp)
 
 #
 # set up boost

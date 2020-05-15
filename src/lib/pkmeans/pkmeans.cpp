@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <tgmath.h>
+#include <omp.h>
 
 #include <algorithm>
 #include <fstream>
@@ -378,12 +379,9 @@ template <class T>
 void PKMeans<T>::assignDistributions() {
   converged = true;
   clearClusterAssignments();
-  if (threads.size() > 1) {
-    runThreads(distributions.size(), PKMeans::assignDistributionsThread);
-  } else {
-    for (size_t x = 0; x < distributions.size(); x++) {
-      findClosestCluster(x);
-    }
+  #pragma omp parallel for
+  for (size_t x = 0; x < distributions.size(); x++) {
+    findClosestCluster(x);
   }
   for (size_t x = 0; x < distributions.size(); x++) {
     clusterAssignments[getCluster(x)].emplace_back(x);
@@ -411,12 +409,9 @@ void PKMeans<T>::computeClusterMean(size_t c) {
 
 template <class T>
 void PKMeans<T>::computeNewClusters() {
-  if (threads.size() > 1) {
-    runThreads(clusters.size(), PKMeans::computeNewClustersThread);
-  } else {
-    for (size_t c = 0; c < clusters.size(); c++) {
-      computeClusterMean(c);
-    }
+  #pragma omp parallel for
+  for (size_t c = 0; c < clusters.size(); c++) {
+    computeClusterMean(c);
   }
 }
 
@@ -530,12 +525,9 @@ void PKMeans<T>::pushCluster(size_t x) {
 
 template <class T>
 void PKMeans<T>::resetUpperBoundNeedsUpdate() {
-  if (threads.size() > 1) {
-    runThreads(distributions.size(), PKMeans::resetUpperBoundNeedsUpdateThread);
-  } else {
-    for (size_t x = 0; x < distributions.size(); x++) {
-      upperBoundNeedsUpdate[x] = true;
-    }
+  #pragma omp parallel for
+  for (size_t x = 0; x < distributions.size(); x++) {
+    upperBoundNeedsUpdate[x] = true;
   }
 }
 
@@ -551,17 +543,14 @@ void *PKMeans<T>::resetUpperBoundNeedsUpdateThread(void *args) {
 
 template <class T>
 void PKMeans<T>::computeClusterDists() {
-  if (threads.size() > 1) {
-    runThreads(clusters.size(), PKMeans::computeClusterDistsThread);
-  } else {
-    for (size_t c1 = 0; c1 < clusters.size(); c1++) {
-      sDists[c1] = 255;
-      for (size_t c2 = 0; c2 < clusters.size(); c2++) {
-        clusterDists[c1][c2] =
-            PKMeans<T>::emd<float>(clusters[c1], clusters[c2], denom);
-        if (c1 != c2 && 0.5 * clusterDists[c1][c2] < sDists[c1])
-          sDists[c1] = 0.5 * clusterDists[c1][c2];
-      }
+  #pragma omp parallel for
+  for (size_t c1 = 0; c1 < clusters.size(); c1++) {
+    sDists[c1] = 255;
+    for (size_t c2 = 0; c2 < clusters.size(); c2++) {
+      clusterDists[c1][c2] =
+          PKMeans<T>::emd<float>(clusters[c1], clusters[c2], denom);
+      if (c1 != c2 && 0.5 * clusterDists[c1][c2] < sDists[c1])
+        sDists[c1] = 0.5 * clusterDists[c1][c2];
     }
   }
 }
@@ -584,15 +573,12 @@ void *PKMeans<T>::computeClusterDistsThread(void *args) {
 
 template <class T>
 void PKMeans<T>::computeLowerBounds() {
-  if (threads.size() > 1) {
-    runThreads(clusters.size(), PKMeans::computeLowerBoundsThread);
-  } else {
-    T dist;
-    for (size_t c = 0; c < clusters.size(); c++) {
-      dist = PKMeans<T>::emd<float>(clusters[c], newClusters[c], denom);
-      for (size_t x = 0; x < distributions.size(); x++)
-        lowerBounds[x][c] = fmax(lowerBounds[x][c] - dist, 0);
-    }
+  T dist;
+  #pragma omp parallel for private(dist)
+  for (size_t c = 0; c < clusters.size(); c++) {
+    dist = PKMeans<T>::emd<float>(clusters[c], newClusters[c], denom);
+    for (size_t x = 0; x < distributions.size(); x++)
+      lowerBounds[x][c] = fmax(lowerBounds[x][c] - dist, 0);
   }
 }
 
@@ -613,15 +599,12 @@ void *PKMeans<T>::computeLowerBoundsThread(void *args) {
 
 template <class T>
 void PKMeans<T>::computeUpperBounds() {
-  if (threads.size() > 1) {
-    runThreads(clusters.size(), PKMeans::computeUpperBoundsThread);
-  } else {
-    T dist;
-    for (size_t c = 0; c < clusters.size(); c++) {
-      dist = PKMeans<T>::emd<float>(clusters[c], newClusters[c], denom);
-      for (size_t i = 0; i < clusterAssignments[c].size(); i++) {
-        upperBounds[clusterAssignments[c][i]] += dist;
-      }
+  T dist;
+  #pragma omp parallel for private(dist)
+  for (size_t c = 0; c < clusters.size(); c++) {
+    dist = PKMeans<T>::emd<float>(clusters[c], newClusters[c], denom);
+    for (size_t i = 0; i < clusterAssignments[c].size(); i++) {
+      upperBounds[clusterAssignments[c][i]] += dist;
     }
   }
 }
@@ -643,6 +626,7 @@ void *PKMeans<T>::computeUpperBoundsThread(void *args) {
 
 template <class T>
 void PKMeans<T>::assignNewClusters() {
+  #pragma omp parallel for
   for (size_t c = 0; c < clusters.size(); c++) clusters[c] = newClusters[c];
 }
 
