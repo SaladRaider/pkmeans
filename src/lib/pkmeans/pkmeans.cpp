@@ -36,6 +36,8 @@ void PKMeans<T>::run(int numClusters, int numThreads, float _confidenceProb,
   initThreads(numThreads);
 
   unsigned int numIterations = 0;
+  numObservedLocalMin.clear();
+  numObservedOnce = 0;
   bestError = std::numeric_limits<float>::max();
   do {
     reset();
@@ -44,6 +46,10 @@ void PKMeans<T>::run(int numClusters, int numThreads, float _confidenceProb,
   } while (maxMissingMass <= getMissingMass());
   pthread_attr_destroy(&threadAttr);
 
+  if (quiet) {
+    std::cout << '\n';
+  }
+  printf("best error: %f\n", bestError);
   printf("pkmeans finished running with %u restarts.\n", numIterations);
 }
 
@@ -85,18 +91,28 @@ void PKMeans<T>::runOnce(int numClusters, const std::string &assignmentsOut,
     bestError = objError;
     saveAssignments(assignmentsOut);
     saveClusters(clustersOut);
+    if (quiet)
+      printf("\nFound new best error: %f; seed: %ld; saving assignments...\n", bestError, seed);
+    else
+      printf("Found new best error: %f; seed: %ld; saving assignments...\n", bestError, seed);
   }
   markClustersObserved();
-  if (!quiet) printf("best error: %f\n", bestError);
-  if (!quiet)
+  if (!quiet) {
+    printf("best error: %f\n", bestError);
     printf("finished one run with seed %ld and %u iterations.\n", seed,
            numIterations);
+  }
   seed += 1;
 }
 
 template <class T>
 void PKMeans<T>::markClustersObserved() {
-  numObservedLocalMin[hashClusters()] += 1;
+  size_t h = hashClusters();
+  numObservedLocalMin[h] += 1;
+  if (numObservedLocalMin[h] == 1)
+    numObservedOnce += 1;
+  else if (numObservedLocalMin[h] == 2)
+    numObservedOnce -= 1;
   if (!quiet)
     printf("numObservedLocalMin[%zu] = %zu\n", hashClusters(),
            numObservedLocalMin[hashClusters()]);
@@ -106,7 +122,9 @@ template <class T>
 size_t PKMeans<T>::hashClusters() {
   std::vector<size_t> clusterHashes;
   for (auto c = 0; c < clusters.size(); c++) {
-    clusterHashes.emplace_back(clusters[c].hash());
+    std::sort(clusterAssignments[c].begin(), clusterAssignments[c].end());
+    clusterHashes.emplace_back(boost::hash_range(clusterAssignments[c].begin(),
+                                                 clusterAssignments[c].end()));
   }
   std::sort(clusterHashes.begin(), clusterHashes.end());
   return boost::hash_range(clusterHashes.begin(), clusterHashes.end());
@@ -114,15 +132,18 @@ size_t PKMeans<T>::hashClusters() {
 
 template <class T>
 float PKMeans<T>::getMissingMass() {
-  auto G = 0.f;
+  auto G = float(numObservedOnce) / float(numObservedLocalMin.size());
   constexpr auto A =
       2.f * 1.41421356237f + 1.73205080757f;  // 2*sqrt(2) + sqrt(3)
-  for (auto e : numObservedLocalMin) G += e.second == 1;
-  G /= numObservedLocalMin.size();
   auto B = A * sqrt(log(3.f / confidenceProb) / numObservedLocalMin.size());
-  auto missingMass = G / numObservedLocalMin.size() + B;
-  printf("G: %f, B: %f, missingMass: %f, maxMissingMass: %f n: %ld\n", G, B,
-         missingMass, maxMissingMass, numObservedLocalMin.size());
+  auto missingMass = G + B;
+  if (quiet) {
+    printf("\rG: %f, B: %f, missingMass: %f, maxMissingMass: %f n: %ld", G, B,
+           missingMass, maxMissingMass, numObservedLocalMin.size());
+    std::cout << std::flush;
+  } else
+    printf("G: %f, B: %f, missingMass: %f, maxMissingMass: %f n: %ld\n", G, B,
+           missingMass, maxMissingMass, numObservedLocalMin.size());
   return missingMass;
 }
 
@@ -141,6 +162,7 @@ void PKMeans<T>::reset() {
 
 template <class T>
 void PKMeans<T>::initThreads(int numThreads) {
+  threads.clear();
   for (size_t i = 0; i < numThreads; i++) {
     threads.emplace_back();
     threadArgs.emplace_back((void *)this, 0, 0);
@@ -191,6 +213,7 @@ void PKMeans<T>::joinThreads() {
 
 template <class T>
 void PKMeans<T>::readDistributions(const std::string &inFilename) {
+  distributions.clear();
   const auto BUFFER_SIZE = 16 * 1024;
   const auto STR_SIZE = 64;
   int fd = open(inFilename.c_str(), O_RDONLY);

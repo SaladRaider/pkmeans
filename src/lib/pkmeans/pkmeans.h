@@ -43,6 +43,7 @@ class PKMeans {
   bool quiet;
   size_t denom = 1;
   size_t seed;
+  size_t numObservedOnce;
   float maxMissingMass;
   float confidenceProb;
   float bestError = std::numeric_limits<float>::max();
