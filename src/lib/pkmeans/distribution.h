@@ -12,18 +12,19 @@ namespace pkmeans {
 template <class T>
 struct Distribution {
  private:
-  std::vector<T> buckets;
+  std::array<T, 50> buckets;
+  size_t sz;
 
  public:
   static bool euclidean;
 
-  Distribution(){};
+  Distribution() : sz{0} {};
 
-  void emplace_back(const T& val) { buckets.emplace_back(val); }
+  void emplace_back(const T& val) { buckets[sz++] = val; assert(sz <= 50); }
 
-  void clear() { buckets.clear(); }
+  void clear() { sz = 0; }
 
-  size_t size() const { return buckets.size(); };
+  size_t size() const { return sz; };
 
   size_t hash() const {
     return boost::hash_range(buckets.begin(), buckets.end());
@@ -32,13 +33,13 @@ struct Distribution {
   void fill(T value) { std::fill(buckets.begin(), buckets.end(), value); };
 
   void fill(T value, size_t N) {
-    buckets.clear();
-    for (size_t i = 0; i < N; i++) buckets.emplace_back(value);
+    clear();
+    for (size_t i = 0; i < N; i++) emplace_back(value);
   };
 
   T sum() const {
     T retSum = 0;
-    for (size_t i = 0; i < size(); i++) {
+    for (size_t i = 0; i < 50; i++) {
       retSum += buckets[i];
     }
     return retSum;
@@ -46,7 +47,7 @@ struct Distribution {
 
   T absSum() const {
     T retSum = 0;
-    for (size_t i = 0; i < size(); i++) {
+    for (size_t i = 0; i < 50; i++) {
       retSum += fabs(buckets[i]);
     }
     return retSum;
@@ -65,7 +66,7 @@ struct Distribution {
 
   Distribution& operator+=(const Distribution& other) {
     #pragma omp simd
-    for (size_t i = 0; i < size(); i++) {
+    for (size_t i = 0; i < 50; i++) {
       buckets[i] += other.buckets[i];
     }
     return *this;
@@ -73,7 +74,7 @@ struct Distribution {
 
   Distribution& operator-=(const Distribution& other) {
     #pragma omp simd
-    for (size_t i = 0; i < size(); i++) {
+    for (size_t i = 0; i < 50; i++) {
       buckets[i] -= other.buckets[i];
     }
     return *this;
@@ -81,7 +82,7 @@ struct Distribution {
 
   Distribution& operator*=(const Distribution& other) {
     #pragma omp simd
-    for (size_t i = 0; i < size(); i++) {
+    for (size_t i = 0; i < 50; i++) {
       buckets[i] *= other.buckets[i];
     }
     return *this;
@@ -89,7 +90,7 @@ struct Distribution {
 
   Distribution& operator*=(const T& rhs) {
     #pragma omp simd
-    for (size_t i = 0; i < size(); i++) {
+    for (size_t i = 0; i < 50; i++) {
       buckets[i] *= rhs;
     }
     return *this;
@@ -97,7 +98,7 @@ struct Distribution {
 
   Distribution& operator/=(const Distribution& other) {
     #pragma omp simd
-    for (size_t i = 0; i < size(); i++) {
+    for (size_t i = 0; i < 50; i++) {
       buckets[i] /= other.buckets[i];
     }
     return *this;
@@ -105,7 +106,7 @@ struct Distribution {
 
   Distribution& operator/=(const T& rhs) {
     #pragma omp simd
-    for (size_t i = 0; i < size(); i++) {
+    for (size_t i = 0; i < 50; i++) {
       buckets[i] /= rhs;
     }
     return *this;
@@ -113,7 +114,7 @@ struct Distribution {
 
   friend bool operator==(const Distribution& lhs, const Distribution& rhs) {
     if (lhs.size() != rhs.size()) return false;
-    for (size_t i = 0; i < lhs.size(); i++) {
+    for (size_t i = 0; i < 50; i++) {
       if (lhs[i] != rhs[i]) return false;
     }
     return true;
@@ -130,16 +131,16 @@ struct Distribution {
     std::istringstream iss(buf);
     while (iss) {
       if (!(iss >> tempVal)) break;
-      obj.buckets.push_back(tempVal);
+      obj.emplace_back(tempVal);
     }
     return is;
   };
 
   friend std::ostream& operator<<(std::ostream& os, const Distribution& obj) {
-    for (size_t i = 0; i < obj.buckets.size() - 1; i++) {
+    for (size_t i = 0; i < 49; i++) {
       os << obj.buckets[i] << ' ';
     }
-    os << obj.buckets[obj.buckets.size() - 1];
+    os << obj.buckets[49];
     return os;
   };
 
@@ -160,7 +161,7 @@ struct Distribution {
 
   friend Distribution operator*(Distribution lhs, const T& rhs) {
     #pragma omp simd
-    for (size_t i = 0; i < lhs.size(); i++) {
+    for (size_t i = 0; i < 50; i++) {
       lhs.buckets[i] *= rhs;
     }
     return lhs;
@@ -168,7 +169,7 @@ struct Distribution {
 
   friend Distribution operator*(const T& lhs, Distribution rhs) {
     #pragma omp simd
-    for (size_t i = 0; i < rhs.size(); i++) {
+    for (size_t i = 0; i < 50; i++) {
       rhs.buckets[i] *= lhs;
     }
     return rhs;
@@ -181,7 +182,7 @@ struct Distribution {
 
   friend Distribution operator/(Distribution lhs, const T& rhs) {
     #pragma omp simd
-    for (size_t i = 0; i < lhs.size(); i++) {
+    for (size_t i = 0; i < 50; i++) {
       lhs.buckets[i] /= rhs;
     }
     return lhs;
@@ -189,7 +190,7 @@ struct Distribution {
 
   friend Distribution operator/(const T& lhs, Distribution rhs) {
     #pragma omp simd
-    for (size_t i = 0; i < rhs.size(); i++) {
+    for (size_t i = 0; i < 50; i++) {
       rhs.buckets[i] /= lhs;
     }
     return rhs;
@@ -198,8 +199,8 @@ struct Distribution {
   static float emd(const Distribution& d1, const Distribution& d2) {
     float sum = 0.0;
     float emd_i = 0.0;
-    for (size_t i = 0; i < d1.size(); i++) {
-      emd_i += d1.buckets[i] - d2.buckets[i];
+    for (size_t i = 0; i < 50; i++) {
+      emd_i += d1[i] - d2[i];
       sum += fabs(emd_i);
     }
     return sum;
