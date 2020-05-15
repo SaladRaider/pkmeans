@@ -57,7 +57,7 @@ class PKMeans {
   void joinThreads();
   void initClusters(int numClusters);
   void initNewClusters();
-  void initLowerBounds();
+  void initLowerBounds(size_t numClusters);
   void initUpperBounds();
   void initAssignments();
   void initClusterDists();
@@ -77,7 +77,7 @@ class PKMeans {
   void computeLowerBounds();
   void computeUpperBounds();
   void computeClusterMean(size_t c);
-  void markClustersObserved();
+  void markClustersObserved(float objError);
   void reset();
   bool needsClusterUpdateApprox(size_t x, size_t c);
   bool needsClusterUpdate(size_t x, size_t c);
@@ -139,10 +139,12 @@ class PKMeans {
     U sum = Distribution<U>::emd(d1, d2);
     constexpr T maxVal = sizeof(T) - 1;
     constexpr T halfVal = sizeof(T) / 2 - 1;
-    if (maxVal > 0)
-      return sum * maxVal / denom;
+    if (sizeof(T) < sizeof(U) && maxVal > 0)
+      return (sum * maxVal) / denom;
+    else if (sizeof(T) < sizeof(U))
+      return (sum * halfVal) / denom;
     else
-      return sum * halfVal / denom;
+      return T(sum);
   };
 };
 }  // namespace pkmeans
