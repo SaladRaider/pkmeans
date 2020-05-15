@@ -1,3 +1,4 @@
+SET(CMAKE_CONFIGURATION_TYPES ${CMAKE_BUILD_TYPE} CACHE STRING "" FORCE)
 cmake_minimum_required(VERSION 3.5)
 
 project(pkmeans)
