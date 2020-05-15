@@ -6,6 +6,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <cstdint>
 
 using namespace pkmeans;
 using namespace std;
@@ -55,11 +56,11 @@ int main(int argc, char **argv) {
   const auto quiet = vm.count("quiet") > 0;
 
   if (lowMem) {
-    auto pkmeans = std::make_unique<PKMeansLowMem>();
-    pkmeans->run(numClusters, numThreads, inFilename, assignmentsOut,
-                 clustersOut);
+    auto pkmeans = std::make_unique<PKMeans<std::uint8_t>>();
+    pkmeans->run(numClusters, numThreads, confidenceProb, missingMass, seed,
+                 useTimeSeed, inFilename, assignmentsOut, clustersOut, quiet);
   } else {
-    auto pkmeans = std::make_unique<PKMeans>();
+    auto pkmeans = std::make_unique<PKMeans<float>>();
     pkmeans->run(numClusters, numThreads, confidenceProb, missingMass, seed,
                  useTimeSeed, inFilename, assignmentsOut, clustersOut, quiet);
   }

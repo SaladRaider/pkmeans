@@ -192,12 +192,6 @@ struct Distribution {
     }
     return sum;
   };
-
-  static std::uint8_t emd8(const Distribution& d1, const Distribution& d2,
-                           size_t denom) {
-    float sum = emd(d1, d2);
-    return sum * 255 / denom;
-  };
 };
 }  // namespace pkmeans
 

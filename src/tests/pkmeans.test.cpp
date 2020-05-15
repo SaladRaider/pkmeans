@@ -54,7 +54,7 @@ class PKMeansTests : public ::testing::Test {
     // before the destructor).
   }
 
-  PKMeans pkmeans;
+  PKMeans<float> pkmeans;
   std::array<std::array<float, 50>, 4> dummyBuckets;
 };
 
@@ -220,14 +220,14 @@ TEST_F(PKMeansTests, ComputeClusterDists) {
 
   for (size_t c1 = 0; c1 < pkmeans.clusters.size(); c1++)
     for (size_t c2 = 0; c2 < pkmeans.clusters.size(); c2++) {
-      EXPECT_EQ(Distribution<float>::emd8(pkmeans.clusters[c1],
+      EXPECT_EQ(PKMeans<float>::emd<float>(pkmeans.clusters[c1],
                                           pkmeans.clusters[c2], pkmeans.denom),
                 pkmeans.clusterDists[c1][c2]);
     }
-  EXPECT_EQ(0.5 * Distribution<float>::emd8(pkmeans.clusters[0],
+  EXPECT_EQ(0.5 * PKMeans<float>::emd<float>(pkmeans.clusters[0],
                                             pkmeans.clusters[1], pkmeans.denom),
             pkmeans.sDists[0]);
-  EXPECT_EQ(0.5 * Distribution<float>::emd8(pkmeans.clusters[0],
+  EXPECT_EQ(0.5 * PKMeans<float>::emd<float>(pkmeans.clusters[0],
                                             pkmeans.clusters[1], pkmeans.denom),
             pkmeans.sDists[1]);
 }
@@ -316,7 +316,7 @@ TEST_F(PKMeansTests, ComputeUpperBounds) {
   pkmeans.computeUpperBounds();
 
   for (size_t x = 0; x < pkmeans.distributions.size(); x++) {
-    EXPECT_LE(Distribution<float>::emd8(pkmeans.distributions[x],
+    EXPECT_LE(PKMeans<float>::emd<float>(pkmeans.distributions[x],
                                         pkmeans.clusters[pkmeans.getCluster(x)],
                                         pkmeans.denom),
               pkmeans.upperBounds[x]);
@@ -481,7 +481,7 @@ TEST_F(PKMeansTests, ComputeDcDist) {
 
   for (size_t x = 0; x < pkmeans.distributions.size(); x++)
     for (size_t c = 0; c < pkmeans.clusters.size(); c++) {
-      EXPECT_EQ(Distribution<float>::emd8(pkmeans.distributions[x],
+      EXPECT_EQ(PKMeans<float>::emd<float>(pkmeans.distributions[x],
                                           pkmeans.clusters[c], pkmeans.denom),
                 pkmeans.computeDcDist(x, c));
     }
@@ -500,7 +500,7 @@ TEST_F(PKMeansTests, CDist) {
 
   for (size_t c1 = 0; c1 < pkmeans.clusters.size(); c1++)
     for (size_t c2 = 0; c2 < pkmeans.clusters.size(); c2++) {
-      EXPECT_EQ(Distribution<float>::emd8(pkmeans.clusters[c1],
+      EXPECT_EQ(PKMeans<float>::emd<float>(pkmeans.clusters[c1],
                                           pkmeans.clusters[c2], pkmeans.denom),
                 pkmeans.cDist(c1, c2));
     }

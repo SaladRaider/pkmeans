@@ -5,7 +5,6 @@
 #include <pkmeans/distribution.h>
 #include <pthread.h>
 
-#include <cstdint>
 #include <limits>
 #include <string>
 #include <unordered_map>
@@ -23,6 +22,7 @@ struct ThreadArgs {
   };
 };
 
+template <class T>
 class PKMeans {
  private:
   std::unordered_map<size_t, size_t> numObservedLocalMin;
@@ -31,10 +31,10 @@ class PKMeans {
   std::vector<Distribution<float>> distributions;
   std::vector<std::vector<size_t>> clusterAssignments;
   std::vector<size_t> clusterMap;
-  std::vector<std::vector<std::uint8_t>> lowerBounds;
-  std::vector<std::uint8_t> upperBounds;
-  std::vector<std::vector<std::uint8_t>> clusterDists;
-  std::vector<std::uint8_t> sDists;
+  std::vector<std::vector<T>> lowerBounds;
+  std::vector<T> upperBounds;
+  std::vector<std::vector<T>> clusterDists;
+  std::vector<T> sDists;
   std::vector<bool> upperBoundNeedsUpdate;
   std::vector<pthread_t> threads;
   std::vector<ThreadArgs> threadArgs;
@@ -85,8 +85,8 @@ class PKMeans {
   size_t getCluster(size_t x);
   size_t hashClusters();
   float getMissingMass();
-  std::uint8_t computeDcDist(size_t x, size_t c);
-  std::uint8_t cDist(size_t c1, size_t c2);
+  T computeDcDist(size_t x, size_t c);
+  T cDist(size_t c1, size_t c2);
   float calcObjFn();
   static void* assignDistributionsThread(void* args);
   static void* computeClusterDistsThread(void* args);
@@ -132,6 +132,17 @@ class PKMeans {
            const std::string& clustersOutFilename, bool quiet);
   void runOnce(int numClusters, const std::string& assignmentsOutFilename,
                const std::string& clustersOutFilename);
+
+  template <typename U>
+  static T emd(const Distribution<U>& d1, const Distribution<U>& d2, size_t denom) {
+    U sum = Distribution<U>::emd(d1, d2);
+    constexpr T maxVal = sizeof(T) - 1;
+    constexpr T halfVal = sizeof(T) / 2 - 1;
+    if (maxVal > 0)
+      return sum * maxVal / denom;
+    else
+      return sum * halfVal / denom;
+  };
 };
 }  // namespace pkmeans
 
