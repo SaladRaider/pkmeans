@@ -130,12 +130,13 @@ class PKMeans {
            float maxMissingMass, size_t _seed, bool useTimeSeed,
            const std::string& inFilename,
            const std::string& assignmentsOutFilename,
-           const std::string& clustersOutFilename, bool quiet);
+           const std::string& clustersOutFilename, bool euclidean, bool quiet);
   void runOnce(int numClusters, const std::string& assignmentsOutFilename,
                const std::string& clustersOutFilename);
 
   template <typename U>
-  static T emd(const Distribution<U>& d1, const Distribution<U>& d2, size_t denom) {
+  static T emd(const Distribution<U>& d1, const Distribution<U>& d2,
+               size_t denom) {
     U sum = Distribution<U>::emd(d1, d2);
     constexpr T maxVal = sizeof(T) - 1;
     constexpr T halfVal = sizeof(T) / 2 - 1;
@@ -145,6 +146,10 @@ class PKMeans {
       return (sum * halfVal) / denom;
     else
       return T(sum);
+  };
+
+  static T calcDist(const Distribution<T>& d1, const Distribution<T>& d2) {
+    return Distribution<T>::emd(d1, d2);
   };
 };
 }  // namespace pkmeans

@@ -18,20 +18,22 @@ void PKMeans<T>::run(int numClusters, int numThreads, float _confidenceProb,
                      float _maxMissingMass, size_t _seed, bool useTimeSeed,
                      const std::string &inFilename,
                      const std::string &assignmentsOut,
-                     const std::string &clustersOut, bool _quiet) {
+                     const std::string &clustersOut, bool euclidean,
+                     bool _quiet) {
   if (useTimeSeed)
     seed = time(NULL);
   else
     seed = _seed;
   confidenceProb = _confidenceProb;
   maxMissingMass = _maxMissingMass;
+  Distribution<float>::euclidean = euclidean;
   quiet = _quiet;
   printf(
       "Running pkmeans with args (k=%d, t=%d, p=%f, m=%f, s=%ld, i=%s, a=%s, "
-      "c=%s, q=%s)\n",
+      "c=%s, e=%s, q=%s)\n",
       numClusters, numThreads, _confidenceProb, _maxMissingMass, seed,
       inFilename.c_str(), assignmentsOut.c_str(), clustersOut.c_str(),
-      quiet ? "true" : "false");
+      euclidean ? "true" : "false", quiet ? "true" : "false");
 
   readDistributions(inFilename);
   initThreads(numThreads);
@@ -157,8 +159,7 @@ void PKMeans<T>::reset() {
   newClusters.clear();
   clusterAssignments.clear();
   for (size_t x = 0; x < lowerBounds.size(); x++)
-    for (size_t c = 0; c < lowerBounds[x].size(); c++)
-      lowerBounds[x][c] = 0;
+    for (size_t c = 0; c < lowerBounds[x].size(); c++) lowerBounds[x][c] = 0;
   upperBounds.clear();
   clusterDists.clear();
   sDists.clear();
@@ -251,7 +252,7 @@ void PKMeans<T>::readDistributions(const std::string &inFilename) {
         newDistribution.clear();
         memset(floatStr, '\0', sizeof(char) * STR_SIZE);
         w = &floatStr[0];
-      } else if (*p == ' ') {
+      } else if (*p == ' ' || *p == '\t') {
         bucketVal = atof(floatStr);
         newDistribution.emplace_back(bucketVal);
         memset(floatStr, '\0', sizeof(char) * STR_SIZE);
@@ -433,7 +434,7 @@ template <class T>
 float PKMeans<T>::calcObjFn() {
   float sum = 0.0;
   for (size_t x = 0; x < distributions.size(); x++) {
-    sum += Distribution<float>::emd(distributions[x], clusters[getCluster(x)]);
+    sum += PKMeans<float>::calcDist(distributions[x], clusters[getCluster(x)]);
   }
   return sum;
 }

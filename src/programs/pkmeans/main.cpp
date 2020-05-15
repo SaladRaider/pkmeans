@@ -26,8 +26,9 @@ int main(int argc, char **argv) {
     ("confidence_prob,p",   po::value<float> ()->default_value       (0.1f),                    "confidence probability of the stopping criteria upper bound for random restarts")
     ("missing_mass,m",      po::value<float> ()->default_value       (0.1f),                    "maximum acceptable missing mass for random restarts")
     ("seed,s",              po::value<size_t> ()->default_value      (size_t(-1)),              "starting random seed")
+    ("euclidean,e",         "use euclidean L2 distance instead of earth mover's distance")
     ("low_mem,l",           "use low memory version")
-    ("quiet,q",             "reduce logs in console.");
+    ("quiet,q",             "reduce logs in console");
 
   po::variables_map vm;
   po::store(po::command_line_parser(argc, argv)
@@ -53,16 +54,19 @@ int main(int argc, char **argv) {
   const auto assignmentsOut = vm["assignments_out"].as<std::string>();
   const auto clustersOut = vm["clusters_out"].as<std::string>();
   const auto lowMem = vm.count("low_mem") > 0;
+  const auto euclidean = vm.count("euclidean") > 0;
   const auto quiet = vm.count("quiet") > 0;
 
   if (lowMem) {
     auto pkmeans = std::make_unique<PKMeans<std::uint8_t>>();
     pkmeans->run(numClusters, numThreads, confidenceProb, missingMass, seed,
-                 useTimeSeed, inFilename, assignmentsOut, clustersOut, quiet);
+                 useTimeSeed, inFilename, assignmentsOut, clustersOut,
+                 euclidean, quiet);
   } else {
     auto pkmeans = std::make_unique<PKMeans<float>>();
     pkmeans->run(numClusters, numThreads, confidenceProb, missingMass, seed,
-                 useTimeSeed, inFilename, assignmentsOut, clustersOut, quiet);
+                 useTimeSeed, inFilename, assignmentsOut, clustersOut,
+                 euclidean, quiet);
   }
   return 0;
 }

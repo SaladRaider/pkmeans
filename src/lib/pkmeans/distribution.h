@@ -4,9 +4,9 @@
 #include <tgmath.h>
 
 #include <algorithm>
+#include <boost/functional/hash.hpp>
 #include <sstream>
 #include <vector>
-#include <boost/functional/hash.hpp>
 
 namespace pkmeans {
 template <class T>
@@ -15,6 +15,8 @@ struct Distribution {
   std::vector<T> buckets;
 
  public:
+  static bool euclidean;
+
   Distribution(){};
 
   void emplace_back(const T& val) { buckets.emplace_back(val); }
@@ -184,15 +186,24 @@ struct Distribution {
   };
 
   static float emd(const Distribution& d1, const Distribution& d2) {
-    float emd_i = 0.0;
     float sum = 0.0;
-    for (size_t i = 0; i < d1.size(); i++) {
-      emd_i += d1.buckets[i] - d2.buckets[i];
-      sum += fabs(emd_i);
+    if (Distribution<T>::euclidean) {
+      for (size_t i = 0; i < d1.size(); i++) {
+        sum +=
+            (d1.buckets[i] - d2.buckets[i]) * (d1.buckets[i] - d2.buckets[i]);
+      }
+    } else {
+      float emd_i = 0.0;
+      for (size_t i = 0; i < d1.size(); i++) {
+        emd_i += d1.buckets[i] - d2.buckets[i];
+        sum += fabs(emd_i);
+      }
     }
     return sum;
   };
 };
+template <class T>
+bool Distribution<T>::euclidean = false;
 }  // namespace pkmeans
 
 #endif  // __DISTRIBUTION_H_INCLUDED_
