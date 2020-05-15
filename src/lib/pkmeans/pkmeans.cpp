@@ -667,16 +667,12 @@ bool PKMeans<T>::needsClusterUpdateApprox(size_t x, size_t c) {
 template <class T>
 bool PKMeans<T>::needsClusterUpdate(size_t x, size_t c) {
   size_t cx = getCluster(x);
-  size_t dcDist;
   if (upperBoundNeedsUpdate[x]) {
-    dcDist = computeDcDist(x, cx);
-    upperBounds[x] = dcDist;
+    upperBounds[x] = computeDcDist(x, cx);
     upperBoundNeedsUpdate[x] = false;
-  } else {
-    dcDist = upperBounds[x];
   }
-  return (dcDist > lowerBounds[x][c] || dcDist > 0.5 * cDist(cx, c)) &&
-         computeDcDist(x, c) < dcDist;
+  return (upperBounds[x] > lowerBounds[x][c] || upperBounds[x] > 0.5 * cDist(cx, c)) &&
+         computeDcDist(x, c) < upperBounds[x];
 }
 
 namespace pkmeans {
