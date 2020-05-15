@@ -135,7 +135,7 @@ class PKMeans {
                const std::string& clustersOutFilename);
 
   template <typename U>
-  static T emd(const Distribution<U>& d1, const Distribution<U>& d2,
+  inline static T emd(const Distribution<U>& d1, const Distribution<U>& d2,
                size_t denom) {
     U sum = Distribution<U>::emd(d1, d2);
     constexpr T maxVal = sizeof(T) - 1;
@@ -148,7 +148,7 @@ class PKMeans {
       return T(sum);
   };
 
-  static T calcDist(const Distribution<T>& d1, const Distribution<T>& d2) {
+  inline static T calcDist(const Distribution<T>& d1, const Distribution<T>& d2) {
     return Distribution<T>::emd(d1, d2);
   };
 };
