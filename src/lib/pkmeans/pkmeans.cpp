@@ -81,25 +81,26 @@ void PKMeans<T>::runOnce(int numClusters, const std::string &assignmentsOut,
   auto objError = calcObjFn();
   if (!quiet) printf("Error is %f\n", objError);
   while (!converged) {
-    printf("computing cluster dists...\n");
+    if (!quiet) printf("computing cluster dists...\n");
     computeClusterDists();
-    printf("assigning...\n");
+    if (!quiet) printf("assigning...\n");
     assignDistributions();
-    printf("computing new clusters...\n");
+    if (!quiet) printf("computing new clusters...\n");
     computeNewClusters();
-    printf("computimg upper bounds...\n");
+    if (!quiet) printf("computing upper bounds...\n");
     computeUpperBounds();
-    printf("computing lower bounds...\n");
+    if (!quiet) printf("computing lower bounds...\n");
     computeLowerBounds();
-    printf("reseting upper bounds flag...\n");
+    if (!quiet) printf("reseting upper bounds flag...\n");
     resetUpperBoundNeedsUpdate();
-    printf("assigning new clusters...\n");
+    if (!quiet) printf("assigning new clusters...\n");
     assignNewClusters();
-    printf("calculating obj fn...\n");
-    objError = calcObjFn();
-    if (!quiet) printf("Error is %f\n", objError);
     numIterations += 1;
+    if (!quiet) printf("done with itteration %ld\n", numIterations);
   }
+  if (!quiet) printf("calculating obj fn...\n");
+  objError = calcObjFn();
+  if (!quiet) printf("Error is %f\n", objError);
   if (objError < bestError) {
     bestError = objError;
     saveAssignments(assignmentsOut);
