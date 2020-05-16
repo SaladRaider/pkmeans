@@ -73,20 +73,28 @@ void PKMeans<T>::runOnce(int numClusters, const std::string &assignmentsOut,
   initUpperBounds();
   if (!quiet) printf("done intializing.\n");
   computeNewClusters();
-  computeLowerBounds();
   computeUpperBounds();
+  computeLowerBounds();
   resetUpperBoundNeedsUpdate();
   assignNewClusters();
   auto objError = calcObjFn();
   if (!quiet) printf("Error is %f\n", objError);
   while (!converged) {
+    printf("computing cluster dists...\n");
     computeClusterDists();
+    printf("assigning...\n");
     assignDistributions();
+    printf("computing new clusters...\n");
     computeNewClusters();
-    computeLowerBounds();
+    printf("computimg upper bounds...\n");
     computeUpperBounds();
+    printf("computing lower bounds...\n");
+    computeLowerBounds();
+    printf("reseting upper bounds flag...\n");
     resetUpperBoundNeedsUpdate();
+    printf("assigning new clusters...\n");
     assignNewClusters();
+    printf("calculating obj fn...\n");
     objError = calcObjFn();
     if (!quiet) printf("Error is %f\n", objError);
     numIterations += 1;
@@ -158,6 +166,7 @@ void PKMeans<T>::reset() {
   clusters.clear();
   newClusters.clear();
   clusterAssignments.clear();
+  newClusterDists.clear();
   for (size_t x = 0; x < lowerBounds.size(); x++)
     for (size_t c = 0; c < lowerBounds[x].size(); c++) lowerBounds[x][c] = 0;
   upperBounds.clear();
@@ -522,6 +531,7 @@ template <class T>
 void PKMeans<T>::pushCluster(size_t x) {
   clusters.emplace_back(distributions[x]);
   clusterAssignments.emplace_back();
+  newClusterDists.emplace_back(0);
   pushClusterDist();
   pushSDist();
   pushLowerBound();
@@ -587,12 +597,9 @@ void PKMeans<T>::computeLowerBounds() {
   if (threads.size() > 1) {
     runThreads(clusters.size(), PKMeans::computeLowerBoundsThread);
   } else {
-    T dist;
-    for (size_t c = 0; c < clusters.size(); c++) {
-      dist = PKMeans<T>::emd<float>(clusters[c], newClusters[c], denom);
-      for (size_t x = 0; x < distributions.size(); x++)
-        lowerBounds[x][c] = fmax(lowerBounds[x][c] - dist, 0);
-    }
+    for (size_t x = 0; x < distributions.size(); x++)
+      for (size_t c = 0; c < clusters.size(); c++)
+        lowerBounds[x][c] = fmax(lowerBounds[x][c] - newClusterDists[c], 0);
   }
 }
 
@@ -600,14 +607,9 @@ template <class T>
 void *PKMeans<T>::computeLowerBoundsThread(void *args) {
   ThreadArgs *threadArgs = (ThreadArgs *)args;
   PKMeans *pkmeans = (PKMeans *)threadArgs->_this;
-  T dist;
-  for (size_t c = threadArgs->start; c < threadArgs->end; c++) {
-    dist = PKMeans<T>::emd<float>(pkmeans->clusters[c], pkmeans->newClusters[c],
-                                  pkmeans->denom);
-    for (size_t x = 0; x < pkmeans->distributions.size(); x++) {
-      pkmeans->lowerBounds[x][c] = fmax(pkmeans->lowerBounds[x][c] - dist, 0);
-    }
-  }
+  for (size_t x = threadArgs->start; x < threadArgs->end; x++)
+      for (size_t c = 0; c < pkmeans->clusters.size(); c++)
+        pkmeans->lowerBounds[x][c] = fmax(pkmeans->lowerBounds[x][c] - pkmeans->newClusterDists[c], 0);
   pthread_exit(NULL);
 }
 
@@ -616,11 +618,10 @@ void PKMeans<T>::computeUpperBounds() {
   if (threads.size() > 1) {
     runThreads(clusters.size(), PKMeans::computeUpperBoundsThread);
   } else {
-    T dist;
     for (size_t c = 0; c < clusters.size(); c++) {
-      dist = PKMeans<T>::emd<float>(clusters[c], newClusters[c], denom);
+      newClusterDists[c] = PKMeans<T>::emd<float>(clusters[c], newClusters[c], denom);
       for (size_t i = 0; i < clusterAssignments[c].size(); i++) {
-        upperBounds[clusterAssignments[c][i]] += dist;
+        upperBounds[clusterAssignments[c][i]] += newClusterDists[c];
       }
     }
   }

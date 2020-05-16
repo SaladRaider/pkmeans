@@ -34,6 +34,7 @@ class PKMeans {
   std::vector<std::vector<T>> lowerBounds;
   std::vector<T> upperBounds;
   std::vector<std::vector<T>> clusterDists;
+  std::vector<T> newClusterDists;
   std::vector<T> sDists;
   std::vector<bool> upperBoundNeedsUpdate;
   std::vector<pthread_t> threads;
