@@ -70,13 +70,11 @@ void PKMeans<T>::runOnce(int numClusters, const std::string &assignmentsOut,
   if (!quiet) printf("done intializing centroids.\n");
   computeClusterDists();
   initNewClusters();
-  initUpperBoundNeedsUpdate();
   initUpperBounds();
   if (!quiet) printf("done intializing.\n");
   computeNewClusters();
   computeUpperBounds();
   computeLowerBounds();
-  resetUpperBoundNeedsUpdate();
   assignNewClusters();
   auto objError = calcObjFn();
   if (!quiet) printf("Error is %f\n", objError);
@@ -91,8 +89,6 @@ void PKMeans<T>::runOnce(int numClusters, const std::string &assignmentsOut,
     computeUpperBounds();
     if (!quiet) printf("computing lower bounds...\n");
     computeLowerBounds();
-    if (!quiet) printf("reseting upper bounds flag...\n");
-    resetUpperBoundNeedsUpdate();
     if (!quiet) printf("assigning new clusters...\n");
     assignNewClusters();
     numIterations += 1;
@@ -174,7 +170,6 @@ void PKMeans<T>::reset() {
   upperBounds.clear();
   clusterDists.clear();
   sDists.clear();
-  upperBoundNeedsUpdate.clear();
   converged = false;
 }
 
@@ -411,6 +406,8 @@ void *PKMeans<T>::assignDistributionsThread(void *args) {
 
 template <class T>
 inline void PKMeans<T>::computeClusterMean(size_t c) {
+  if (clusterAssignments[c].size() == 0)
+    return;
   newClusters[c].fill(0.0);
   for (size_t i = 0; i < clusterAssignments[c].size(); i++) {
     newClusters[c] += distributions[clusterAssignments[c][i]];
@@ -501,14 +498,6 @@ inline void PKMeans<T>::initSDists() {
 }
 
 template <class T>
-inline void PKMeans<T>::initUpperBoundNeedsUpdate() {
-  upperBoundNeedsUpdate.clear();
-  for (size_t x = 0; x < distributions.size(); x++) {
-    upperBoundNeedsUpdate.emplace_back(true);
-  }
-}
-
-template <class T>
 inline void PKMeans<T>::pushClusterDist() {
   size_t cNew = clusters.size() - 1;
   clusterDists.emplace_back();
@@ -540,27 +529,6 @@ inline void PKMeans<T>::pushCluster(size_t x) {
   pushClusterDist();
   pushSDist();
   initAssignments();
-}
-
-template <class T>
-inline void PKMeans<T>::resetUpperBoundNeedsUpdate() {
-  if (threads.size() > 1) {
-    runThreads(distributions.size(), PKMeans::resetUpperBoundNeedsUpdateThread);
-  } else {
-    for (size_t x = 0; x < distributions.size(); x++) {
-      upperBoundNeedsUpdate[x] = true;
-    }
-  }
-}
-
-template <class T>
-void *PKMeans<T>::resetUpperBoundNeedsUpdateThread(void *args) {
-  ThreadArgs *threadArgs = (ThreadArgs *)args;
-  PKMeans *pkmeans = (PKMeans *)threadArgs->_this;
-  for (size_t x = threadArgs->start; x < threadArgs->end; x++) {
-    pkmeans->upperBoundNeedsUpdate[x] = true;
-  }
-  pthread_exit(NULL);
 }
 
 template <class T>

@@ -36,7 +36,6 @@ class PKMeans {
   std::vector<std::vector<T>> clusterDists;
   std::vector<T> newClusterDists;
   std::vector<T> sDists;
-  std::vector<bool> upperBoundNeedsUpdate;
   std::vector<pthread_t> threads;
   std::vector<ThreadArgs> threadArgs;
   pthread_attr_t threadAttr;
@@ -63,14 +62,12 @@ class PKMeans {
   void initAssignments();
   void initClusterDists();
   void initSDists();
-  void initUpperBoundNeedsUpdate();
   void pushClusterDist();
   void pushSDist();
   void pushLowerBound();
   void pushCluster(size_t x);
   void computeClusterDists();
   void computeSDists();
-  void resetUpperBoundNeedsUpdate();
   void clearClusterAssignments();
   void assignDistributions();
   void assignNewClusters();
@@ -95,7 +92,6 @@ class PKMeans {
   static void* computeNewClustersThread(void* args);
   static void* computeLowerBoundsThread(void* args);
   static void* computeUpperBoundsThread(void* args);
-  static void* resetUpperBoundNeedsUpdateThread(void* args);
 
   // test friend functions
   friend class PKMeansTests;
@@ -112,11 +108,9 @@ class PKMeans {
   FRIEND_TEST(PKMeansTests, InitLowerBounds);
   FRIEND_TEST(PKMeansTests, InitClusterDists);
   FRIEND_TEST(PKMeansTests, InitSDists);
-  FRIEND_TEST(PKMeansTests, InitUpperBoundNeedsUpdate);
   FRIEND_TEST(PKMeansTests, InitAssignments);
   FRIEND_TEST(PKMeansTests, InitUpperBounds);
   FRIEND_TEST(PKMeansTests, ComputeClusterDists);
-  FRIEND_TEST(PKMeansTests, ResetUpperBoundNeedsUpdate);
   FRIEND_TEST(PKMeansTests, AssignNewClusters);
   FRIEND_TEST(PKMeansTests, ComputeLowerBounds);
   FRIEND_TEST(PKMeansTests, ComputeUpperBounds);
@@ -139,12 +133,9 @@ class PKMeans {
   static T emd(const Distribution<U>& d1, const Distribution<U>& d2,
                size_t denom) {
     U sum = Distribution<U>::emd(d1, d2);
-    constexpr T maxVal = sizeof(T) - 1;
-    constexpr T halfVal = sizeof(T) / 2 - 1;
-    if (sizeof(T) < sizeof(U) && maxVal > 0)
+    constexpr T maxVal = std::numeric_limits<T>::max();
+    if (sizeof(T) < sizeof(U))
       return (sum * maxVal) / denom;
-    else if (sizeof(T) < sizeof(U))
-      return (sum * halfVal) / denom;
     else
       return T(sum);
   };
