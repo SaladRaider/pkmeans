@@ -338,20 +338,20 @@ void PKMeans<T>::initClusters(int numClusters) {
 }
 
 template <class T>
-void PKMeans<T>::initNewClusters() {
+inline void PKMeans<T>::initNewClusters() {
   for (size_t c = 0; c < clusters.size(); c++)
     newClusters.emplace_back(clusters[c]);
 }
 
 template <class T>
-void PKMeans<T>::clearClusterAssignments() {
+inline void PKMeans<T>::clearClusterAssignments() {
   for (size_t c = 0; c < clusterAssignments.size(); c++) {
     clusterAssignments[c].clear();
   }
 }
 
 template <class T>
-size_t PKMeans<T>::findClosestCluster(size_t x) {
+inline size_t PKMeans<T>::findClosestCluster(size_t x) {
   if (upperBounds[x] <= sDists[getCluster(x)]) return getCluster(x);
   for (size_t c = 0; c < clusters.size(); c++) {
     if (needsClusterUpdateApprox(x, c) && needsClusterUpdate(x, c)) {
@@ -363,7 +363,7 @@ size_t PKMeans<T>::findClosestCluster(size_t x) {
 }
 
 template <class T>
-size_t PKMeans<T>::findClosestInitCluster(size_t x) {
+inline size_t PKMeans<T>::findClosestInitCluster(size_t x) {
   // if 1/2 d(c,c') >= d(x,c), then
   //     d(x,c') >= d(x,c)
   if (clusters.size() == 1) {
@@ -379,12 +379,12 @@ size_t PKMeans<T>::findClosestInitCluster(size_t x) {
 }
 
 template <class T>
-size_t PKMeans<T>::getCluster(size_t x) {
+inline size_t PKMeans<T>::getCluster(size_t x) {
   return clusterMap[x];
 }
 
 template <class T>
-void PKMeans<T>::assignDistributions() {
+inline void PKMeans<T>::assignDistributions() {
   converged = true;
   clearClusterAssignments();
   if (threads.size() > 1) {
@@ -410,7 +410,7 @@ void *PKMeans<T>::assignDistributionsThread(void *args) {
 }
 
 template <class T>
-void PKMeans<T>::computeClusterMean(size_t c) {
+inline void PKMeans<T>::computeClusterMean(size_t c) {
   newClusters[c].fill(0.0);
   for (size_t i = 0; i < clusterAssignments[c].size(); i++) {
     newClusters[c] += distributions[clusterAssignments[c][i]];
@@ -419,7 +419,7 @@ void PKMeans<T>::computeClusterMean(size_t c) {
 }
 
 template <class T>
-void PKMeans<T>::computeNewClusters() {
+inline void PKMeans<T>::computeNewClusters() {
   if (threads.size() > 1) {
     runThreads(clusters.size(), PKMeans::computeNewClustersThread);
   } else {
@@ -440,7 +440,7 @@ void *PKMeans<T>::computeNewClustersThread(void *args) {
 }
 
 template <class T>
-float PKMeans<T>::calcObjFn() {
+inline float PKMeans<T>::calcObjFn() {
   float sum = 0.0;
   for (size_t x = 0; x < distributions.size(); x++) {
     sum += PKMeans<float>::calcDist(distributions[x], clusters[getCluster(x)]);
@@ -449,7 +449,7 @@ float PKMeans<T>::calcObjFn() {
 }
 
 template <class T>
-void PKMeans<T>::initLowerBounds(size_t numClusters) {
+inline void PKMeans<T>::initLowerBounds(size_t numClusters) {
   lowerBounds.clear();
   for (size_t x = 0; x < distributions.size(); x++) {
     lowerBounds.emplace_back();
@@ -460,7 +460,7 @@ void PKMeans<T>::initLowerBounds(size_t numClusters) {
 }
 
 template <class T>
-void PKMeans<T>::initUpperBounds() {
+inline void PKMeans<T>::initUpperBounds() {
   upperBounds.clear();
   for (size_t x = 0; x < distributions.size(); x++) {
     upperBounds.emplace_back(computeDcDist(x, getCluster(x)));
@@ -468,14 +468,14 @@ void PKMeans<T>::initUpperBounds() {
 }
 
 template <class T>
-void PKMeans<T>::initAssignments() {
+inline void PKMeans<T>::initAssignments() {
   for (size_t x = 0; x < distributions.size(); x++) {
     clusterMap[x] = findClosestInitCluster(x);
   }
 }
 
 template <class T>
-void PKMeans<T>::initClusterDists() {
+inline void PKMeans<T>::initClusterDists() {
   clusterDists.clear();
   for (size_t c1 = 0; c1 < clusters.size(); c1++) {
     clusterDists.emplace_back();
@@ -486,7 +486,7 @@ void PKMeans<T>::initClusterDists() {
 }
 
 template <class T>
-void PKMeans<T>::initSDists() {
+inline void PKMeans<T>::initSDists() {
   sDists.clear();
   for (size_t c = 0; c < clusters.size(); c++) {
     sDists.emplace_back();
@@ -494,7 +494,7 @@ void PKMeans<T>::initSDists() {
 }
 
 template <class T>
-void PKMeans<T>::initUpperBoundNeedsUpdate() {
+inline void PKMeans<T>::initUpperBoundNeedsUpdate() {
   upperBoundNeedsUpdate.clear();
   for (size_t x = 0; x < distributions.size(); x++) {
     upperBoundNeedsUpdate.emplace_back(true);
@@ -502,7 +502,7 @@ void PKMeans<T>::initUpperBoundNeedsUpdate() {
 }
 
 template <class T>
-void PKMeans<T>::pushClusterDist() {
+inline void PKMeans<T>::pushClusterDist() {
   size_t cNew = clusters.size() - 1;
   for (size_t c = 0; c < cNew; c++) {
     clusterDists[c].emplace_back(
@@ -516,19 +516,19 @@ void PKMeans<T>::pushClusterDist() {
 }
 
 template <class T>
-void PKMeans<T>::pushSDist() {
+inline void PKMeans<T>::pushSDist() {
   sDists.emplace_back();
 }
 
 template <class T>
-void PKMeans<T>::pushLowerBound() {
+inline void PKMeans<T>::pushLowerBound() {
   for (size_t x = 0; x < distributions.size(); x++) {
     lowerBounds[x][clusters.size() - 1] = 0;
   }
 }
 
 template <class T>
-void PKMeans<T>::pushCluster(size_t x) {
+inline void PKMeans<T>::pushCluster(size_t x) {
   clusters.emplace_back(distributions[x]);
   clusterAssignments.emplace_back();
   newClusterDists.emplace_back(0);
@@ -539,7 +539,7 @@ void PKMeans<T>::pushCluster(size_t x) {
 }
 
 template <class T>
-void PKMeans<T>::resetUpperBoundNeedsUpdate() {
+inline void PKMeans<T>::resetUpperBoundNeedsUpdate() {
   if (threads.size() > 1) {
     runThreads(distributions.size(), PKMeans::resetUpperBoundNeedsUpdateThread);
   } else {
@@ -560,7 +560,7 @@ void *PKMeans<T>::resetUpperBoundNeedsUpdateThread(void *args) {
 }
 
 template <class T>
-void PKMeans<T>::computeClusterDists() {
+inline void PKMeans<T>::computeClusterDists() {
   if (threads.size() > 1) {
     runThreads(clusters.size(), PKMeans::computeClusterDistsThread);
   } else {
@@ -593,7 +593,7 @@ void *PKMeans<T>::computeClusterDistsThread(void *args) {
 }
 
 template <class T>
-void PKMeans<T>::computeLowerBounds() {
+inline void PKMeans<T>::computeLowerBounds() {
   if (threads.size() > 1) {
     runThreads(clusters.size(), PKMeans::computeLowerBoundsThread);
   } else {
@@ -614,7 +614,7 @@ void *PKMeans<T>::computeLowerBoundsThread(void *args) {
 }
 
 template <class T>
-void PKMeans<T>::computeUpperBounds() {
+inline void PKMeans<T>::computeUpperBounds() {
   if (threads.size() > 1) {
     runThreads(clusters.size(), PKMeans::computeUpperBoundsThread);
   } else {
@@ -643,30 +643,30 @@ void *PKMeans<T>::computeUpperBoundsThread(void *args) {
 }
 
 template <class T>
-void PKMeans<T>::assignNewClusters() {
+inline void PKMeans<T>::assignNewClusters() {
   for (size_t c = 0; c < clusters.size(); c++) clusters[c] = newClusters[c];
 }
 
 template <class T>
-T PKMeans<T>::computeDcDist(size_t x, size_t c) {
+inline T PKMeans<T>::computeDcDist(size_t x, size_t c) {
   lowerBounds[x][c] =
       PKMeans<T>::emd<float>(distributions[x], clusters[c], denom);
   return lowerBounds[x][c];
 }
 
 template <class T>
-T PKMeans<T>::cDist(size_t c1, size_t c2) {
+inline T PKMeans<T>::cDist(size_t c1, size_t c2) {
   return clusterDists[c1][c2];
 }
 
 template <class T>
-bool PKMeans<T>::needsClusterUpdateApprox(size_t x, size_t c) {
+inline  bool PKMeans<T>::needsClusterUpdateApprox(size_t x, size_t c) {
   return c != getCluster(x) && upperBounds[x] > lowerBounds[x][c] &&
          upperBounds[x] > 0.5 * cDist(getCluster(x), c);
 }
 
 template <class T>
-bool PKMeans<T>::needsClusterUpdate(size_t x, size_t c) {
+inline bool PKMeans<T>::needsClusterUpdate(size_t x, size_t c) {
   size_t cx = getCluster(x);
   if (upperBoundNeedsUpdate[x]) {
     upperBounds[x] = computeDcDist(x, cx);
