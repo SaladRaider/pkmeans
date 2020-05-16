@@ -356,10 +356,12 @@ inline void PKMeans<T>::clearClusterAssignments() {
 template <class T>
 inline size_t PKMeans<T>::findClosestCluster(size_t x) {
   if (upperBounds[x] <= sDists[getCluster(x)]) return getCluster(x);
+  upperBounds[x] = computeDcDist(x, getCluster(x));
   for (size_t c = 0; c < clusters.size(); c++) {
     if (needsClusterUpdateApprox(x, c) && needsClusterUpdate(x, c)) {
       converged = false;
       clusterMap[x] = c;
+      upperBounds[x] = computeDcDist(x, c);
     }
   }
   return getCluster(x);
@@ -662,20 +664,14 @@ inline T PKMeans<T>::cDist(size_t c1, size_t c2) {
 }
 
 template <class T>
-inline  bool PKMeans<T>::needsClusterUpdateApprox(size_t x, size_t c) {
-  return c != getCluster(x) && upperBounds[x] > lowerBounds[x][c] &&
-         upperBounds[x] > 0.5 * cDist(getCluster(x), c);
+inline bool PKMeans<T>::needsClusterUpdateApprox(size_t x, size_t c) {
+  return upperBounds[x] > lowerBounds[x][c] &&
+         upperBounds[x] > 0.5 * cDist(getCluster(x), c) && c != getCluster(x);
 }
 
 template <class T>
 inline bool PKMeans<T>::needsClusterUpdate(size_t x, size_t c) {
-  size_t cx = getCluster(x);
-  if (upperBoundNeedsUpdate[x]) {
-    upperBounds[x] = computeDcDist(x, cx);
-    upperBoundNeedsUpdate[x] = false;
-  }
-  return (upperBounds[x] > lowerBounds[x][c] || upperBounds[x] > 0.5 * cDist(cx, c)) &&
-         computeDcDist(x, c) < upperBounds[x];
+  return computeDcDist(x, c) < upperBounds[x];
 }
 
 namespace pkmeans {
