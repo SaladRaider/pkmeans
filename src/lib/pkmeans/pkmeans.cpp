@@ -306,25 +306,25 @@ void PKMeans<T>::initClusters(int numClusters) {
   size_t x = size_t(rand() % int(distributions.size()));
   float p;
   float pSum;
-  Distribution<float> weightedP;
-
-  weightedP.fill(0.0, distributions.size());
+  float weightedSum;
+  std::vector<float> weightedP(distributions.size(), 0.0);
 
   // pick random 1st cluster
   pushCluster(x);
 
   for (size_t k = 1; k < kMax; k++) {
     // calculate weighted probabillities
-    for (x = 0; x < distributions.size(); x++)
+    for (x = 0; x < distributions.size(); x++) {
       weightedP[x] = lowerBounds[x][getCluster(x)];
-    weightedP *= weightedP;
-    weightedP /= weightedP.sum();
+      weightedP[x] *= weightedP[x];
+      weightedSum += weightedP[x];
+    }
 
     // select new cluster based on weighted probabillites
     p = float(rand()) / float(RAND_MAX);
     pSum = 0.0;
     for (x = 0; x < distributions.size(); x++) {
-      pSum += weightedP[x];
+      pSum += weightedP[x] / weightedSum;
       if (pSum >= p) {
         pushCluster(x);
         break;
