@@ -68,6 +68,7 @@ void PKMeans<T>::runOnce(int numClusters, const std::string &assignmentsOut,
   if (!quiet) printf("done reading file.\n");
   initClusters(numClusters);
   if (!quiet) printf("done intializing centroids.\n");
+  computeClusterDists();
   initNewClusters();
   initUpperBoundNeedsUpdate();
   initUpperBounds();
@@ -314,6 +315,7 @@ void PKMeans<T>::initClusters(int numClusters) {
 
   for (size_t k = 1; k < kMax; k++) {
     // calculate weighted probabillities
+    weightedSum = 0;
     for (x = 0; x < distributions.size(); x++) {
       weightedP[x] = lowerBounds[x][getCluster(x)];
       weightedP[x] *= weightedP[x];
@@ -366,14 +368,9 @@ template <class T>
 inline size_t PKMeans<T>::findClosestInitCluster(size_t x) {
   // if 1/2 d(c,c') >= d(x,c), then
   //     d(x,c') >= d(x,c)
-  if (clusters.size() == 1) {
-    computeDcDist(x, 0);
-    return 0;
-  }
-  size_t cx = getCluster(x);
-  if (0.5 * cDist(cx, clusters.size() - 1) >= lowerBounds[x][cx] ||
-      lowerBounds[x][cx] < computeDcDist(x, clusters.size() - 1)) {
-    return cx;
+  if (cDist(getCluster(x), clusters.size() - 1) >= lowerBounds[x][getCluster(x)] ||
+      lowerBounds[x][getCluster(x)] < computeDcDist(x, clusters.size() - 1)) {
+    return getCluster(x);
   }
   return clusters.size() - 1;
 }
@@ -469,6 +466,13 @@ inline void PKMeans<T>::initUpperBounds() {
 
 template <class T>
 inline void PKMeans<T>::initAssignments() {
+  if (clusters.size() == 1) {
+    for (size_t x = 0; x < distributions.size(); x++) {
+        computeDcDist(x, 0);
+        clusterMap[x] = 0;
+    }
+    return;
+  }
   for (size_t x = 0; x < distributions.size(); x++) {
     clusterMap[x] = findClosestInitCluster(x);
   }
@@ -504,15 +508,13 @@ inline void PKMeans<T>::initUpperBoundNeedsUpdate() {
 template <class T>
 inline void PKMeans<T>::pushClusterDist() {
   size_t cNew = clusters.size() - 1;
+  clusterDists.emplace_back();
   for (size_t c = 0; c < cNew; c++) {
     clusterDists[c].emplace_back(
-        PKMeans<T>::emd<float>(clusters[c], clusters[cNew], denom));
+        0.5f * PKMeans<T>::emd<float>(clusters[c], clusters[cNew], denom));
+    clusterDists[cNew].emplace_back(clusterDists[c][cNew]);
   }
-  clusterDists.emplace_back();
-  for (size_t c = 0; c < clusters.size(); c++) {
-    clusterDists[cNew].emplace_back(
-        PKMeans<T>::emd<float>(clusters[cNew], clusters[c], denom));
-  }
+  clusterDists[cNew].emplace_back(0);
 }
 
 template <class T>
@@ -534,7 +536,6 @@ inline void PKMeans<T>::pushCluster(size_t x) {
   newClusterDists.emplace_back(0);
   pushClusterDist();
   pushSDist();
-  pushLowerBound();
   initAssignments();
 }
 
