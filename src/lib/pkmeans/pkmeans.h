@@ -31,7 +31,7 @@ class PKMeans {
   std::vector<Distribution<float>> distributions;
   std::vector<std::vector<size_t>> clusterAssignments;
   std::vector<size_t> clusterMap;
-  std::vector<std::vector<T>> lowerBounds;
+  std::vector<T> lowerBounds;
   std::vector<T> upperBounds;
   std::vector<std::vector<T>> clusterDists;
   std::vector<T> newClusterDists;
@@ -87,6 +87,7 @@ class PKMeans {
   float getMissingMass();
   T computeDcDist(size_t x, size_t c);
   T cDist(size_t c1, size_t c2);
+  T& getLowerBounds(size_t x, size_t c);
   float calcObjFn();
   static void* assignDistributionsThread(void* args);
   static void* computeClusterDistsThread(void* args);
@@ -94,7 +95,6 @@ class PKMeans {
   static void* computeLowerBoundsThread(void* args);
   static void* computeUpperBoundsThread(void* args);
   static void* initAssignmentsThread(void* args);
-  static void* initLowerBoundsThread(void* args);
 
   // test friend functions
   friend class PKMeansTests;

@@ -97,11 +97,7 @@ TEST_F(PKMeansTests, InitLowerBounds) {
   pkmeans.clusters.emplace_back();
   pkmeans.initLowerBounds();
 
-  ASSERT_EQ(pkmeans.distributions.size(), pkmeans.lowerBounds.size());
-
-  for (size_t x = 0; x < pkmeans.distributions.size(); x++) {
-    EXPECT_EQ(pkmeans.clusters.size(), pkmeans.lowerBounds[x].size());
-  }
+  ASSERT_EQ(pkmeans.distributions.size() * pkmeans.clusters.size(), pkmeans.lowerBounds.size());
 }
 
 TEST_F(PKMeansTests, InitClusterDists) {
@@ -277,8 +273,8 @@ TEST_F(PKMeansTests, ComputeLowerBounds) {
     for (size_t c = 0; c < pkmeans.clusters.size(); c++) {
       EXPECT_GE(Distribution<float>::emd(pkmeans.distributions[x],
                                          pkmeans.clusters[c]),
-                pkmeans.lowerBounds[x][c]);
-      EXPECT_LE(0, pkmeans.lowerBounds[x][c]);
+                pkmeans.getLowerBounds(x, c));
+      EXPECT_LE(0, pkmeans.getLowerBounds(x, c));
     }
 }
 
@@ -325,9 +321,9 @@ TEST_F(PKMeansTests, NeedsClusterUpdate) {
   pkmeans.clusters[0][49] = 1.0;
   pkmeans.clusters[1][23] = 1.0;
   pkmeans.clusters[1][22] = 1.0;
-  for (size_t x = 0; x < pkmeans.lowerBounds.size(); x++)
-    for (size_t c = 0; c < pkmeans.lowerBounds[x].size(); c++)
-      pkmeans.lowerBounds[x][c] = 0;
+  for (size_t x = 0; x < pkmeans.distributions.size(); x++)
+    for (size_t c = 0; c < pkmeans.numClusters; c++)
+      pkmeans.getLowerBounds(x, c) = 0;
 
   pkmeans.initNewClusters();
   pkmeans.assignNewClusters();
@@ -351,8 +347,8 @@ TEST_F(PKMeansTests, NeedsClusterUpdate) {
   pkmeans.assignNewClusters();
   pkmeans.computeClusterDists();
 
-  for (size_t x = 0; x < pkmeans.lowerBounds.size(); x++)
-    for (size_t c = 0; c < pkmeans.lowerBounds[x].size(); c++)
+  for (size_t x = 0; x < pkmeans.distributions.size(); x++)
+    for (size_t c = 0; c < pkmeans.numClusters; c++)
       pkmeans.computeDcDist(x, c);
 
   for (size_t x = 0; x < pkmeans.distributions.size(); x++) {
@@ -408,9 +404,9 @@ TEST_F(PKMeansTests, FindClosestInitCluster) {
   pkmeans.clusters[0][49] = 1.0;
   pkmeans.clusters[1][23] = 1.0;
   pkmeans.clusters[1][22] = 1.0;
-  for (size_t x = 0; x < pkmeans.lowerBounds.size(); x++)
-    for (size_t c = 0; c < pkmeans.lowerBounds[x].size(); c++)
-      pkmeans.lowerBounds[x][c] = 0;
+  for (size_t x = 0; x < pkmeans.distributions.size(); x++)
+    for (size_t c = 0; c < pkmeans.numClusters; c++)
+      pkmeans.getLowerBounds(x, c) = 0;
 
   pkmeans.initNewClusters();
   pkmeans.assignNewClusters();
@@ -447,9 +443,9 @@ TEST_F(PKMeansTests, GetCluster) {
   pkmeans.clusters[0][49] = 1.0;
   pkmeans.clusters[1][23] = 1.0;
   pkmeans.clusters[1][22] = 1.0;
-  for (size_t x = 0; x < pkmeans.lowerBounds.size(); x++)
-    for (size_t c = 0; c < pkmeans.lowerBounds[x].size(); c++)
-      pkmeans.lowerBounds[x][c] = 0;
+  for (size_t x = 0; x < pkmeans.distributions.size(); x++)
+    for (size_t c = 0; c < pkmeans.numClusters; c++)
+      pkmeans.getLowerBounds(x, c) = 0;
 
   pkmeans.initNewClusters();
   pkmeans.assignNewClusters();
@@ -520,9 +516,9 @@ TEST_F(PKMeansTests, FindClosestCluster) {
   pkmeans.clusters[0][49] = 1.0;
   pkmeans.clusters[1][23] = 1.0;
   pkmeans.clusters[1][22] = 1.0;
-  for (size_t x = 0; x < pkmeans.lowerBounds.size(); x++)
-    for (size_t c = 0; c < pkmeans.lowerBounds[x].size(); c++)
-      pkmeans.lowerBounds[x][c] = 0;
+  for (size_t x = 0; x < pkmeans.distributions.size(); x++)
+    for (size_t c = 0; c < pkmeans.numClusters; c++)
+      pkmeans.getLowerBounds(x, c) = 0;
 
   pkmeans.initNewClusters();
   pkmeans.assignNewClusters();
@@ -579,9 +575,9 @@ TEST_F(PKMeansTests, AssignDistributions) {
   pkmeans.clusters[0][49] = 1.0;
   pkmeans.clusters[1][23] = 1.0;
   pkmeans.clusters[1][22] = 1.0;
-  for (size_t x = 0; x < pkmeans.lowerBounds.size(); x++)
-    for (size_t c = 0; c < pkmeans.lowerBounds[x].size(); c++)
-      pkmeans.lowerBounds[x][c] = 0;
+  for (size_t x = 0; x < pkmeans.distributions.size(); x++)
+    for (size_t c = 0; c < pkmeans.numClusters; c++)
+      pkmeans.getLowerBounds(x, c) = 0;
 
   pkmeans.initNewClusters();
   pkmeans.assignNewClusters();
@@ -650,9 +646,9 @@ TEST_F(PKMeansTests, ComputeClusterMean) {
   pkmeans.clusters[0][49] = 1.0;
   pkmeans.clusters[1][23] = 1.0;
   pkmeans.clusters[1][22] = 1.0;
-  for (size_t x = 0; x < pkmeans.lowerBounds.size(); x++)
-    for (size_t c = 0; c < pkmeans.lowerBounds[x].size(); c++)
-      pkmeans.lowerBounds[x][c] = 0;
+  for (size_t x = 0; x < pkmeans.distributions.size(); x++)
+    for (size_t c = 0; c < pkmeans.numClusters; c++)
+      pkmeans.getLowerBounds(x, c) = 0;
 
   pkmeans.initNewClusters();
   pkmeans.assignNewClusters();
@@ -699,9 +695,9 @@ TEST_F(PKMeansTests, ComputeNewClusters) {
   pkmeans.clusters[0][49] = 1.0;
   pkmeans.clusters[1][23] = 1.0;
   pkmeans.clusters[1][22] = 1.0;
-  for (size_t x = 0; x < pkmeans.lowerBounds.size(); x++)
-    for (size_t c = 0; c < pkmeans.lowerBounds[x].size(); c++)
-      pkmeans.lowerBounds[x][c] = 0;
+  for (size_t x = 0; x < pkmeans.distributions.size(); x++)
+    for (size_t c = 0; c < pkmeans.numClusters; c++)
+      pkmeans.getLowerBounds(x, c) = 0;
 
   pkmeans.initNewClusters();
   pkmeans.assignNewClusters();
@@ -747,9 +743,9 @@ TEST_F(PKMeansTests, CalcObjFn) {
   pkmeans.clusters[0][49] = 1.0;
   pkmeans.clusters[1][23] = 1.0;
   pkmeans.clusters[1][22] = 1.0;
-  for (size_t x = 0; x < pkmeans.lowerBounds.size(); x++)
-    for (size_t c = 0; c < pkmeans.lowerBounds[x].size(); c++)
-      pkmeans.lowerBounds[x][c] = 0;
+  for (size_t x = 0; x < pkmeans.distributions.size(); x++)
+    for (size_t c = 0; c < pkmeans.numClusters; c++)
+      pkmeans.getLowerBounds(x, c) = 0;
 
   pkmeans.initNewClusters();
   pkmeans.assignNewClusters();
