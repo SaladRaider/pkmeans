@@ -2,8 +2,8 @@
 
 #include <sys/ioctl.h>
 #include <unistd.h>
-#include <cstring>
 
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 
@@ -15,27 +15,29 @@ ProgressBar<N>::ProgressBar()
       prevProgress{0},
       lastShownTime{std::chrono::steady_clock::now()},
       numShows{0},
-      elapsedSum{0} {
+      elapsedSum{0},
+      elapsedMs{0} {
   memset(progressBar, '\0', sizeof(char) * (progressSize + 1));
 }
 
 template <size_t N>
 void ProgressBar<N>::show(float progressPercent) {
   progress = progressSize * progressPercent;
-  if (prevProgress != progress) {
-    auto newTime = std::chrono::steady_clock::now();
+  currTime = std::chrono::steady_clock::now();
+  elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+                  currTime - lastShownTime)
+                  .count();
+  if (progress != prevProgress || elapsedMs > showTimeMs) {
     numShows *= timeDecay;
     elapsedSum *= timeDecay;
     numShows += 1;
-    elapsedSum += std::chrono::duration_cast<std::chrono::milliseconds>(
-                      newTime - lastShownTime)
-                      .count() *
-                  (progressSize - progress) / 1000.f;
+    elapsedSum += elapsedMs * (progressSize - progress) / 1000.f;
     auto minutesLeft = static_cast<int>(elapsedSum / numShows / 60) % 60;
     auto hoursLeft = static_cast<int>(elapsedSum / numShows / 60 / 60);
     auto secondsLeft = static_cast<int>(elapsedSum / numShows) % 60;
-    lastShownTime = newTime;
+    lastShownTime = currTime;
     prevProgress = progress;
+    elapsedMs = 0;
     memset(progressBar, ' ', sizeof(char) * progressSize);
     memset(progressBar, '=', sizeof(char) * progress);
     if (progress < progressSize)

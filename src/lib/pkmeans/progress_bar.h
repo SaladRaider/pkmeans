@@ -9,13 +9,16 @@ template <size_t N>
 class ProgressBar {
  private:
   static constexpr auto progressSize = size_t{N};
-  static constexpr auto timeDecay = 0.8f;
+  static constexpr auto timeDecay = 0.85f;
+  static constexpr auto showTimeMs = 250;
   size_t progress;
   size_t prevProgress;
   float numShows;
   float elapsedSum;
+  int elapsedMs;
   char progressBar[N + 1];
   std::chrono::steady_clock::time_point lastShownTime;
+  std::chrono::steady_clock::time_point currTime;
 
  public:
   ProgressBar();
