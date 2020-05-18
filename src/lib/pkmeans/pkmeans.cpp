@@ -235,8 +235,8 @@ void PKMeans<T>::joinThreads() {
 template <class T>
 void PKMeans<T>::readDistributions(const std::string &inFilename) {
   distributions.clear();
-  const auto BUFFER_SIZE = 16 * 1024;
-  const auto STR_SIZE = 128;
+  constexpr auto BUFFER_SIZE = 16 * 1024;
+  constexpr auto STR_SIZE = 128;
   int fd = open(inFilename.c_str(), O_RDONLY);
   if (fd == -1) {
     fprintf(stderr, "error opening file %s\n", inFilename.c_str());

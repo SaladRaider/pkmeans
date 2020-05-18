@@ -1,6 +1,7 @@
 #include "progress_bar.h"
 
 #include <sys/ioctl.h>
+#include <tgmath.h>
 #include <unistd.h>
 
 #include <cstring>
@@ -23,7 +24,7 @@ ProgressBar<N>::ProgressBar()
 
 template <size_t N>
 void ProgressBar<N>::show(float progressPercent) {
-  progress = progressSize * progressPercent;
+  progress = fmin(progressSize * progressPercent, progressSize);
   currTime = std::chrono::steady_clock::now();
   elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(
                   currTime - lastShownTime)
@@ -35,11 +36,14 @@ void ProgressBar<N>::show(float progressPercent) {
       elapsedSum *= timeDecay;
     }
     numShows += 1.f;
-    elapsedSum += elapsedMs /
-                  (progressPercent - lastProgressPercent) / 1000.f;
-    auto minutesLeft = static_cast<int>(elapsedSum * (1.f - progressPercent) / numShows / 60) % 60;
-    auto hoursLeft = static_cast<int>(elapsedSum * (1.f - progressPercent) / numShows / 60 / 60);
-    auto secondsLeft = static_cast<int>(elapsedSum * (1.f - progressPercent) / numShows) % 60;
+    elapsedSum += elapsedMs / (progressPercent - lastProgressPercent) / 1000.f;
+    auto minutesLeft =
+        static_cast<int>(elapsedSum * (1.f - progressPercent) / numShows / 60) %
+        60;
+    auto hoursLeft = static_cast<int>(elapsedSum * (1.f - progressPercent) /
+                                      numShows / 60 / 60);
+    auto secondsLeft =
+        static_cast<int>(elapsedSum * (1.f - progressPercent) / numShows) % 60;
     lastShownTime = currTime;
     lastProgressPercent = progressPercent;
     prevProgress = progress;
