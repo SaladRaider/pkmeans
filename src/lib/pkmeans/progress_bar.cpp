@@ -49,8 +49,8 @@ void ProgressBar<N>::show(float progressPercent) {
     if (progress < progressSize)
       memset(progressBar + progress, '>', sizeof(char) * 1);
     std::cout << std::left << "\r\033[1;32m[" << progressBar << "] "
-              << std::setw(6) << std::fixed << std::setprecision(2)
-              << (progressPercent * 100) << "% ";
+              << std::right << std::setw(5) << std::fixed
+              << std::setprecision(2) << (progressPercent * 100) << "% ";
     if (hoursLeft > 0)
       std::cout << std::right << std::setw(3) << hoursLeft << "h ";
     if (hoursLeft > 0 || minutesLeft > 0)
