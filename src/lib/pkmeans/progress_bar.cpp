@@ -35,11 +35,11 @@ void ProgressBar<N>::show(float progressPercent) {
       elapsedSum *= timeDecay;
     }
     numShows += 1.f;
-    elapsedSum += elapsedMs * (1.f - progressPercent) /
+    elapsedSum += elapsedMs /
                   (progressPercent - lastProgressPercent) / 1000.f;
-    auto minutesLeft = static_cast<int>(elapsedSum / numShows / 60) % 60;
-    auto hoursLeft = static_cast<int>(elapsedSum / numShows / 60 / 60);
-    auto secondsLeft = static_cast<int>(elapsedSum / numShows) % 60;
+    auto minutesLeft = static_cast<int>(elapsedSum * (1.f - progressPercent) / numShows / 60) % 60;
+    auto hoursLeft = static_cast<int>(elapsedSum * (1.f - progressPercent) / numShows / 60 / 60);
+    auto secondsLeft = static_cast<int>(elapsedSum * (1.f - progressPercent) / numShows) % 60;
     lastShownTime = currTime;
     lastProgressPercent = progressPercent;
     prevProgress = progress;
