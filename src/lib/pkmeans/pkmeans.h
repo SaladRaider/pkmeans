@@ -41,6 +41,7 @@ class PKMeans {
   pthread_attr_t threadAttr;
   bool converged = false;
   bool quiet;
+  size_t numClusters;
   size_t denom = 1;
   size_t seed;
   size_t numObservedOnce;
@@ -55,9 +56,9 @@ class PKMeans {
   void startThread(size_t tid, void* (*fn)(void*));
   void runThreads(size_t size, void* (*fn)(void*));
   void joinThreads();
-  void initClusters(int numClusters);
+  void initClusters();
   void initNewClusters();
-  void initLowerBounds(size_t numClusters);
+  void initLowerBounds();
   void initUpperBounds();
   void initAssignments();
   void initClusterDists();
@@ -93,6 +94,7 @@ class PKMeans {
   static void* computeLowerBoundsThread(void* args);
   static void* computeUpperBoundsThread(void* args);
   static void* initAssignmentsThread(void* args);
+  static void* initLowerBoundsThread(void* args);
 
   // test friend functions
   friend class PKMeansTests;
