@@ -192,6 +192,7 @@ struct Distribution {
         sum +=
             (d1.buckets[i] - d2.buckets[i]) * (d1.buckets[i] - d2.buckets[i]);
       }
+      sum = sqrt(sum);
     } else {
       float emd_i = 0.0;
       for (size_t i = 0; i < d1.size(); i++) {

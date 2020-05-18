@@ -236,7 +236,7 @@ template <class T>
 void PKMeans<T>::readDistributions(const std::string &inFilename) {
   distributions.clear();
   const auto BUFFER_SIZE = 16 * 1024;
-  const auto STR_SIZE = 64;
+  const auto STR_SIZE = 128;
   int fd = open(inFilename.c_str(), O_RDONLY);
   if (fd == -1) {
     fprintf(stderr, "error opening file %s\n", inFilename.c_str());
@@ -258,12 +258,12 @@ void PKMeans<T>::readDistributions(const std::string &inFilename) {
   auto progressBar = ProgressBar<50>();
   printf("reading %s; filesize: %lld\n", inFilename.c_str(), filesize);
 
+  w = &floatStr[0];
   while (size_t bytes_read = read(fd, buf, BUFFER_SIZE)) {
     if (bytes_read == size_t(-1))
       fprintf(stderr, "read failed on file %s\n", inFilename.c_str());
     if (!bytes_read) break;
     p = buf;
-    w = &floatStr[0];
     memset(floatStr, '\0', sizeof(char) * STR_SIZE);
     for (p = buf; p < buf + bytes_read; ++p) {
       if (*p == '\n') {
