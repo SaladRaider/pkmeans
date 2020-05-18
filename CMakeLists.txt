@@ -2,9 +2,6 @@ cmake_minimum_required(VERSION 3.5)
 
 project(pkmeans)
 
-cmake_policy(SET CMP0054 NEW)
-cmake_policy(SET CMP0079 NEW)
-
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-register")
 
