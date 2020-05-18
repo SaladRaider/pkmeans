@@ -16,7 +16,8 @@ ProgressBar<N>::ProgressBar()
       lastShownTime{std::chrono::steady_clock::now()},
       numShows{0},
       elapsedSum{0},
-      elapsedMs{0} {
+      elapsedMs{0},
+      lastProgressPercent{0} {
   memset(progressBar, '\0', sizeof(char) * (progressSize + 1));
 }
 
@@ -27,15 +28,17 @@ void ProgressBar<N>::show(float progressPercent) {
   elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(
                   currTime - lastShownTime)
                   .count();
-  if (progress != prevProgress || elapsedMs > showTimeMs) {
+  if (lastProgressPercent != progressPercent &&
+      (progress != prevProgress || elapsedMs > showTimeMs)) {
     numShows *= timeDecay;
     elapsedSum *= timeDecay;
-    numShows += 1;
-    elapsedSum += elapsedMs * (progressSize - progress) / 1000.f;
+    numShows += 1.f;
+    elapsedSum += elapsedMs * (1.f - progressPercent) / (progressPercent - lastProgressPercent) / 1000.f;
     auto minutesLeft = static_cast<int>(elapsedSum / numShows / 60) % 60;
     auto hoursLeft = static_cast<int>(elapsedSum / numShows / 60 / 60);
     auto secondsLeft = static_cast<int>(elapsedSum / numShows) % 60;
     lastShownTime = currTime;
+    lastProgressPercent = progressPercent;
     prevProgress = progress;
     elapsedMs = 0;
     memset(progressBar, ' ', sizeof(char) * progressSize);

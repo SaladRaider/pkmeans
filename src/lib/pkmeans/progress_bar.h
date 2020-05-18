@@ -15,6 +15,7 @@ class ProgressBar {
   size_t prevProgress;
   float numShows;
   float elapsedSum;
+  float lastProgressPercent;
   int elapsedMs;
   char progressBar[N + 1];
   std::chrono::steady_clock::time_point lastShownTime;
