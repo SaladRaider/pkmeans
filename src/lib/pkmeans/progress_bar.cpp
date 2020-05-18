@@ -30,10 +30,13 @@ void ProgressBar<N>::show(float progressPercent) {
                   .count();
   if (lastProgressPercent != progressPercent &&
       (progress != prevProgress || elapsedMs > showTimeMs)) {
-    numShows *= timeDecay;
-    elapsedSum *= timeDecay;
+    if (progress != prevProgress) {
+      numShows *= timeDecay;
+      elapsedSum *= timeDecay;
+    }
     numShows += 1.f;
-    elapsedSum += elapsedMs * (1.f - progressPercent) / (progressPercent - lastProgressPercent) / 1000.f;
+    elapsedSum += elapsedMs * (1.f - progressPercent) /
+                  (progressPercent - lastProgressPercent) / 1000.f;
     auto minutesLeft = static_cast<int>(elapsedSum / numShows / 60) % 60;
     auto hoursLeft = static_cast<int>(elapsedSum / numShows / 60 / 60);
     auto secondsLeft = static_cast<int>(elapsedSum / numShows) % 60;
