@@ -236,17 +236,18 @@ void PKMeans<T>::runThreads(size_t size,
     threadArgs[tid].start = i;
     i += itemsPerThread;
     threadArgs[tid].end = i;
-    startThread(tid, [](void *args) -> void * {
-      return (*((ThreadArgs *)args)->fn)(args);
-    });
+    startThread(tid, threadFnWrapper);
   }
   threadArgs[tid].fn = &fn;
   threadArgs[tid].start = i;
   threadArgs[tid].end = size;
-  startThread(tid, [](void *args) -> void * {
-    return (*((ThreadArgs *)args)->fn)(args);
-  });
+  startThread(tid, threadFnWrapper);
   joinThreads();
+}
+
+template <class T>
+void* PKMeans<T>::threadFnWrapper(void* args) {
+  return (*((ThreadArgs *)args)->fn)(args);
 }
 
 template <class T>
