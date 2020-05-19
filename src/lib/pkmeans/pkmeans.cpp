@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <functional>
 #include <iomanip>
 #include <limits>
 #include <string>
@@ -42,8 +43,10 @@ void PKMeans<T>::run(int _numClusters, int numThreads, float _confidenceProb,
 
   readDistributions(inFilename);
   if (!quiet) printf("done reading file.\n");
+  printf("initializing threads...\n");
   initThreads(numThreads);
   if (!quiet) printf("done initializing threads.\n");
+  printf("initializing lower bounds...\n");
   initLowerBounds();
   if (!quiet) printf("done initializing lower bounds.\n");
 
@@ -73,9 +76,10 @@ void PKMeans<T>::runOnce(int numClusters, const std::string &assignmentsOut,
   if (!quiet) printf("Starting kmeans\n");
 
   unsigned int numIterations = 1;
-  if (!quiet) printf("initializing centroids\n");
+  if (!quiet) printf("\033[1minitializing centroids\033[0m\n");
   initClusters();
   if (!quiet) printf("done intializing centroids.\n");
+  if (!quiet) printf("initializing run variables...\n");
   computeClusterDists();
   initNewClusters();
   initUpperBounds();
@@ -169,6 +173,7 @@ float PKMeans<T>::getMissingMass() {
 
 template <class T>
 void PKMeans<T>::reset() {
+  if (!quiet) printf("resetting run variables...\n");
   clusters.clear();
   newClusters.clear();
   clusterAssignments.clear();
@@ -179,6 +184,7 @@ void PKMeans<T>::reset() {
   clusterDists.clear();
   sDists.clear();
   converged = false;
+  if (!quiet) printf("done resetting run variables\n");
 }
 
 template <class T>
@@ -220,6 +226,30 @@ void PKMeans<T>::runThreads(size_t size, void *(*fn)(void *)) {
 }
 
 template <class T>
+void PKMeans<T>::runThreads(size_t size,
+                            const std::function<void *(void *)> &fn) {
+  size_t itemsPerThread = size / threads.size();
+  size_t i = 0;
+  size_t tid = 0;
+  for (tid = 0; tid < threads.size() - 1; tid++) {
+    threadArgs[tid].fn = &fn;
+    threadArgs[tid].start = i;
+    i += itemsPerThread;
+    threadArgs[tid].end = i;
+    startThread(tid, [](void *args) -> void * {
+      return (*((ThreadArgs *)args)->fn)(args);
+    });
+  }
+  threadArgs[tid].fn = &fn;
+  threadArgs[tid].start = i;
+  threadArgs[tid].end = size;
+  startThread(tid, [](void *args) -> void * {
+    return (*((ThreadArgs *)args)->fn)(args);
+  });
+  joinThreads();
+}
+
+template <class T>
 void PKMeans<T>::joinThreads() {
   int rc;
   void *status;
@@ -256,7 +286,8 @@ void PKMeans<T>::readDistributions(const std::string &inFilename) {
   auto numBytesRead = size_t{0};
   auto prevProgress = size_t{0};
   auto progressBar = ProgressBar<50>();
-  printf("reading %s; filesize: %lld\n", inFilename.c_str(), filesize);
+  printf("\033[1mreading %s; filesize: %lld\033[0m\n", inFilename.c_str(),
+         filesize);
 
   w = &floatStr[0];
   while (size_t bytes_read = read(fd, buf, BUFFER_SIZE)) {
@@ -324,6 +355,7 @@ void PKMeans<T>::initClusters() {
   float p;
   float pSum;
   float weightedSum;
+  pthread_mutex_t lock;
   std::vector<float> weightedP(distributions.size(), 0.0);
   ProgressBar<50> progressBar;
   if (!quiet) progressBar.show(0.f);
@@ -332,13 +364,33 @@ void PKMeans<T>::initClusters() {
   pushCluster(x);
   if (!quiet) progressBar.show(1.f / kMax);
 
+  pthread_mutex_init(&lock, NULL);
+  std::function<void *(void *)> calcWeighted = [&weightedP, &weightedSum,
+                                                &lock](void *args) -> void * {
+    ThreadArgs *threadArgs = (ThreadArgs *)args;
+    PKMeans *pkmeans = (PKMeans *)threadArgs->_this;
+    auto sum = 0.f;
+    for (size_t x = threadArgs->start; x < threadArgs->end; x++) {
+      weightedP[x] = pkmeans->getLowerBounds(x, pkmeans->getCluster(x));
+      weightedP[x] *= weightedP[x];
+      sum += weightedP[x];
+    }
+    pthread_mutex_lock(&lock);
+    weightedSum += sum;
+    pthread_mutex_unlock(&lock);
+    pthread_exit(NULL);
+  };
   for (size_t k = 1; k < kMax; k++) {
     // calculate weighted probabillities
     weightedSum = 0;
-    for (x = 0; x < distributions.size(); x++) {
-      weightedP[x] = getLowerBounds(x, getCluster(x));
-      weightedP[x] *= weightedP[x];
-      weightedSum += weightedP[x];
+    if (threads.size() > 1) {
+      runThreads(distributions.size(), calcWeighted);
+    } else {
+      for (size_t x = 0; x < distributions.size(); x++) {
+        weightedP[x] = getLowerBounds(x, getCluster(x));
+        weightedP[x] *= weightedP[x];
+        weightedSum += weightedP[x];
+      }
     }
 
     // select new cluster based on weighted probabillites
@@ -353,6 +405,7 @@ void PKMeans<T>::initClusters() {
     }
     if (!quiet) progressBar.show((k + 1.f) / kMax);
   }
+  pthread_mutex_destroy(&lock);
   for (size_t x = 0; x < distributions.size(); x++) {
     clusterAssignments[getCluster(x)].emplace_back(x);
   }

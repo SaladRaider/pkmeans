@@ -5,12 +5,14 @@
 #include <pkmeans/distribution.h>
 #include <pthread.h>
 
+#include <functional>
 #include <limits>
 #include <string>
 #include <unordered_map>
 
 namespace pkmeans {
 struct ThreadArgs {
+  const std::function<void*(void*)>* fn;
   void* _this = nullptr;
   size_t start = 0;
   size_t end = 0;
@@ -55,6 +57,7 @@ class PKMeans {
   void initThreads(int numThreads);
   void startThread(size_t tid, void* (*fn)(void*));
   void runThreads(size_t size, void* (*fn)(void*));
+  void runThreads(size_t size, const std::function<void*(void*)>& fn);
   void joinThreads();
   void initClusters();
   void initNewClusters();
