@@ -353,11 +353,11 @@ template <class T>
 void PKMeans<T>::initClusters() {
   size_t kMax = size_t(numClusters);
   size_t x = size_t(rand() % int(distributions.size()));
-  float p;
-  float pSum;
-  float weightedSum;
+  double p;
+  double pSum;
+  double weightedSum;
   pthread_mutex_t lock;
-  std::vector<float> weightedP(distributions.size(), 0.0);
+  std::vector<double> weightedP(distributions.size(), 0.0);
   ProgressBar<50> progressBar;
   if (!quiet) progressBar.show(0.f);
 
@@ -395,7 +395,7 @@ void PKMeans<T>::initClusters() {
     }
 
     // select new cluster based on weighted probabillites
-    p = float(rand()) / float(RAND_MAX);
+    p = double(rand()) / double(RAND_MAX);
     pSum = 0.0;
     for (x = 0; x < distributions.size(); x++) {
       pSum += weightedP[x] / weightedSum;
