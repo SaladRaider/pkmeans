@@ -36,7 +36,7 @@ void PKMeans<T>::run(int _numClusters, int numThreads, float _confidenceProb,
       "Running pkmeans with args (k=%ld, t=%d, p=%f, m=%f, l=%s, s=%ld, i=%s, "
       "a=%s, c=%s, e=%s, q=%s)\n",
       numClusters, numThreads, _confidenceProb, _maxMissingMass,
-      sizeof(T) == 8 ? "true" : "false", seed, inFilename.c_str(),
+      sizeof(T) == 1 ? "true" : "false", seed, inFilename.c_str(),
       assignmentsOut.c_str(), clustersOut.c_str(), euclidean ? "true" : "false",
       quiet ? "true" : "false");
 
