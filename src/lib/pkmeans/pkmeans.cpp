@@ -269,12 +269,12 @@ void PKMeans<T>::readDistributions(const std::string &inFilename) {
          filesize);
 
   w = &floatStr[0];
+  memset(floatStr, '\0', sizeof(char) * STR_SIZE);
   while (size_t bytes_read = read(fd, buf, BUFFER_SIZE)) {
     if (bytes_read == size_t(-1))
       fprintf(stderr, "read failed on file %s\n", inFilename.c_str());
     if (!bytes_read) break;
     p = buf;
-    memset(floatStr, '\0', sizeof(char) * STR_SIZE);
     for (p = buf; p < buf + bytes_read; ++p) {
       if (*p == '\n') {
         bucketVal = atof(floatStr);
