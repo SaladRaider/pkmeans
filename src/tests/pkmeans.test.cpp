@@ -589,88 +589,11 @@ TEST_F(PKMeansTests, AssignDistributions) {
 
   pkmeans.assignDistributions();
 
-  ASSERT_EQ(2, pkmeans.clusterAssignments.size());
-  ASSERT_EQ(2, pkmeans.clusterAssignments[0].size());
-  ASSERT_EQ(2, pkmeans.clusterAssignments[1].size());
-
-  EXPECT_EQ(0, pkmeans.clusterAssignments[0][0]);
-  EXPECT_EQ(1, pkmeans.clusterAssignments[0][1]);
-  EXPECT_EQ(2, pkmeans.clusterAssignments[1][0]);
-  EXPECT_EQ(3, pkmeans.clusterAssignments[1][1]);
-}
-
-TEST_F(PKMeansTests, ClearClusterAssignments) {
-  pkmeans.initLowerBounds();
-  pkmeans.initClusters();
-  pkmeans.initNewClusters();
-  pkmeans.initClusterDists();
-  pkmeans.initSDists();
-  pkmeans.initAssignments();
-  pkmeans.initUpperBounds();
-  pkmeans.computeClusterDists();
-  pkmeans.assignDistributions();
-
-  ASSERT_GT(pkmeans.clusterAssignments.size(), 0.0);
-  for (size_t i = 0; i < pkmeans.clusterAssignments.size(); i++) {
-    ASSERT_GT(pkmeans.clusterAssignments[i].size(), 0.0)
-        << "cluster " << i << " has 0 assigned distributions.\n";
-  }
-
-  pkmeans.clearClusterAssignments();
-
-  ASSERT_GT(pkmeans.clusterAssignments.size(), 0.0);
-  for (size_t i = 0; i < pkmeans.clusterAssignments.size(); i++) {
-    ASSERT_EQ(pkmeans.clusterAssignments[i].size(), 0.0);
-  }
-}
-
-TEST_F(PKMeansTests, ComputeClusterMean) {
-  for (size_t i = 0; i < pkmeans.distributions.size(); i++) {
-    pkmeans.distributions[i].fill(0.0);
-  }
-  pkmeans.denom = 2 * 49;
-  pkmeans.distributions[0][0] = 1.0;
-  pkmeans.distributions[0][49] = 1.0;
-  pkmeans.distributions[1][1] = 1.0;
-  pkmeans.distributions[1][48] = 1.0;
-  pkmeans.distributions[2][24] = 1.0;
-  pkmeans.distributions[2][25] = 1.0;
-  pkmeans.distributions[3][20] = 1.0;
-  pkmeans.distributions[3][30] = 1.0;
-
-  pkmeans.initLowerBounds();
-  pkmeans.initClusters();
-  pkmeans.clusters[0].fill(0.0);
-  pkmeans.clusters[1].fill(0.0);
-  pkmeans.clusters[0][0] = 1.0;
-  pkmeans.clusters[0][49] = 1.0;
-  pkmeans.clusters[1][23] = 1.0;
-  pkmeans.clusters[1][22] = 1.0;
-  for (size_t x = 0; x < pkmeans.distributions.size(); x++)
-    for (size_t c = 0; c < pkmeans.numClusters; c++)
-      pkmeans.getLowerBounds(x, c) = 0;
-
-  pkmeans.initNewClusters();
-  pkmeans.assignNewClusters();
-  pkmeans.initClusterDists();
-  pkmeans.initSDists();
-  pkmeans.initAssignments();
-  pkmeans.initUpperBounds();
-  pkmeans.computeClusterDists();
-  pkmeans.assignDistributions();
-
-  Distribution<float> expected;
-  Distribution<float> result;
-
-  pkmeans.computeClusterMean(0);
-  expected = (pkmeans.distributions[0] + pkmeans.distributions[1]) / 2.0;
-  result = pkmeans.newClusters[0];
-  EXPECT_EQ(expected, result);
-
-  pkmeans.computeClusterMean(1);
-  expected = (pkmeans.distributions[2] + pkmeans.distributions[3]) / 2.0;
-  result = pkmeans.newClusters[1];
-  EXPECT_EQ(expected, result);
+  ASSERT_EQ(4, pkmeans.clusterMap.size());
+  EXPECT_EQ(0, pkmeans.clusterMap[0]);
+  EXPECT_EQ(0, pkmeans.clusterMap[1]);
+  EXPECT_EQ(1, pkmeans.clusterMap[2]);
+  EXPECT_EQ(1, pkmeans.clusterMap[3]);
 }
 
 TEST_F(PKMeansTests, ComputeNewClusters) {

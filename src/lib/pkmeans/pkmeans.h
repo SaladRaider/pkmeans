@@ -31,7 +31,6 @@ class PKMeans {
   std::vector<Distribution<float>> clusters;
   std::vector<Distribution<float>> newClusters;
   std::vector<Distribution<float>> distributions;
-  std::vector<std::vector<size_t>> clusterAssignments;
   std::vector<size_t> clusterMap;
   std::vector<T> lowerBounds;
   std::vector<T> upperBounds;
@@ -42,6 +41,8 @@ class PKMeans {
   std::vector<ThreadArgs> threadArgs;
   std::vector<double> weightedP;
   std::vector<double> weightedSums;
+  std::vector<pthread_mutex_t> clusterLocks;
+  std::vector<size_t> clusterSize;
   pthread_attr_t threadAttr;
   bool converged = false;
   bool quiet;
@@ -74,13 +75,11 @@ class PKMeans {
   void pushCluster(size_t x);
   void computeClusterDists();
   void computeSDists();
-  void clearClusterAssignments();
   void assignDistributions();
   void assignNewClusters();
   void computeNewClusters();
   void computeLowerBounds();
   void computeUpperBounds();
-  void computeClusterMean(size_t c);
   void markClustersObserved();
   void reset();
   bool needsClusterUpdateApprox(size_t x, size_t c);
@@ -109,8 +108,6 @@ class PKMeans {
   FRIEND_TEST(PKMeansTests, InitClusters);
   FRIEND_TEST(PKMeansTests, FindClosestCluster);
   FRIEND_TEST(PKMeansTests, AssignDistributions);
-  FRIEND_TEST(PKMeansTests, ClearClusterAssignments);
-  FRIEND_TEST(PKMeansTests, ComputeClusterMean);
   FRIEND_TEST(PKMeansTests, ComputeNewClusters);
   FRIEND_TEST(PKMeansTests, CalcObjFn);
 
