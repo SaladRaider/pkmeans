@@ -80,7 +80,7 @@ class PKMeans {
   void computeNewClusters();
   void computeLowerBounds();
   void computeUpperBounds();
-  void markClustersObserved();
+  void markClustersObserved(float objError);
   void reset();
   bool needsClusterUpdateApprox(size_t x, size_t c);
   bool needsClusterUpdate(size_t x, size_t c);

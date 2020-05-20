@@ -120,7 +120,7 @@ void PKMeans<T>::runOnce(int numClusters, const std::string &assignmentsOut,
       printf("Found new best error: %f; seed: %ld; saving assignments...\n",
              bestError, seed);
   }
-  markClustersObserved();
+  markClustersObserved(objError);
   if (!quiet) {
     printf("best error: %f\n", bestError);
     printf("finished one run with seed %ld and %u iterations.\n", seed,
@@ -130,8 +130,8 @@ void PKMeans<T>::runOnce(int numClusters, const std::string &assignmentsOut,
 }
 
 template <class T>
-void PKMeans<T>::markClustersObserved() {
-  size_t h = hashClusters();
+void PKMeans<T>::markClustersObserved(float objError) {
+  size_t h = objError;
   numObservedLocalMin[h] += 1;
   if (numObservedLocalMin[h] == 1)
     numObservedOnce += 1;
