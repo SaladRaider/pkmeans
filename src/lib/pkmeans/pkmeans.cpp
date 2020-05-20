@@ -226,26 +226,6 @@ void PKMeans<T>::runThreads(size_t size, void *(*fn)(void *)) {
 }
 
 template <class T>
-void PKMeans<T>::runThreads(size_t size,
-                            const std::function<void *(void *)> &fn) {
-  size_t itemsPerThread = size / threads.size();
-  size_t i = 0;
-  size_t tid = 0;
-  for (tid = 0; tid < threads.size() - 1; tid++) {
-    threadArgs[tid].fn = &fn;
-    threadArgs[tid].start = i;
-    i += itemsPerThread;
-    threadArgs[tid].end = i;
-    startThread(tid, threadFnWrapper);
-  }
-  threadArgs[tid].fn = &fn;
-  threadArgs[tid].start = i;
-  threadArgs[tid].end = size;
-  startThread(tid, threadFnWrapper);
-  joinThreads();
-}
-
-template <class T>
 void *PKMeans<T>::threadFnWrapper(void *args) {
   return (*((ThreadArgs *)args)->fn)(args);
 }
@@ -324,7 +304,24 @@ void PKMeans<T>::readDistributions(const std::string &inFilename) {
     distributions.emplace_back(newDistribution);
     clusterMap.emplace_back(size_t(0));
   }
-  denom = (distributions[0].size() - 1) * distributions[0].sum();
+  printf("getting max distance...\n");
+  float maxDist = 0.f;
+  float dist;
+  Distribution<float> mean = distributions[0];
+  mean.fill(0.f);
+  for (size_t x = 0; x < distributions.size(); x++) {
+    mean += distributions[x];
+  }
+  mean /= float(distributions.size());
+  for (size_t x = 0; x < distributions.size(); x++) {
+    dist = PKMeans<float>::calcDist(mean, distributions[x]);
+    if (dist > maxDist) {
+      maxDist = dist;
+    }
+  }
+  // actual max is 2*maxDist, but 1*maxDist keeps more precision
+  denom = maxDist;
+  printf("max distance: %f\n", maxDist);
 }
 
 template <class T>
@@ -352,47 +349,33 @@ void PKMeans<T>::saveAssignments(const std::string &outFilename) {
 template <class T>
 void PKMeans<T>::initClusters() {
   size_t kMax = size_t(numClusters);
-  size_t x = size_t(rand() % int(distributions.size()));
+  size_t xx = size_t(rand() % int(distributions.size()));
   size_t newClusterIdx;
   double p;
   double weightedSum;
-  std::vector<double> weightedP(distributions.size(), 0.0);
-  std::vector<double> weightedSums(threads.size(), 0.0);
+  weightedP.assign(distributions.size(), 0.0);
   ProgressBar<50> progressBar;
   if (!quiet) progressBar.show(0.f);
 
   // pick random 1st cluster
-  pushCluster(x);
+  pushCluster(xx);
   if (!quiet) progressBar.show(1.f / kMax);
 
-  std::function<void *(void *)> calcWeighted =
-      [&weightedP, &weightedSums](void *args) -> void * {
-    ThreadArgs *threadArgs = (ThreadArgs *)args;
-    PKMeans *pkmeans = (PKMeans *)threadArgs->_this;
-    auto i = size_t(threadArgs->start / pkmeans->distributions.size());
-    for (size_t x = threadArgs->start; x < threadArgs->end; x++) {
-      weightedP[x] = pkmeans->getLowerBounds(x, pkmeans->getCluster(x));
-      weightedP[x] *= weightedP[x];
-      weightedSums[i] += weightedP[x];
-    }
-    pthread_exit(NULL);
-  };
   for (size_t k = 1; k < kMax; k++) {
     // calculate weighted probabillities
     weightedSum = 0;
+    weightedSums.assign(threads.size(), 0.0);
     if (threads.size() > 1) {
       runThreads(distributions.size(), calcWeighted);
-      p = double(rand()) / double(RAND_MAX);
       for (auto i = 0; i < weightedSums.size(); i++) {
         weightedSum += weightedSums[i];
       }
-      // select new cluster based on weighted probabillites
       p = (double(rand()) / double(RAND_MAX)) * weightedSum;
       for (auto i = 0; i < weightedSums.size(); i++) {
         p -= weightedSums[i];
         if (p <= 0) {
           p += weightedSums[i];
-          for (x = i * (distributions.size() / threads.size());
+          for (size_t x = i * (distributions.size() / threads.size());
                x < distributions.size(); x++) {
             p -= weightedP[x];
             if (p <= 0) {
@@ -405,13 +388,14 @@ void PKMeans<T>::initClusters() {
       }
     } else {
       for (size_t x = 0; x < distributions.size(); x++) {
-        weightedP[x] = getLowerBounds(x, getCluster(x));
+        weightedP[x] = double(getLowerBounds(x, getCluster(x)));
         weightedP[x] *= weightedP[x];
         weightedSum += weightedP[x];
       }
       // select new cluster based on weighted probabillites
       p = (double(rand()) / double(RAND_MAX)) * weightedSum;
-      for (x = 0; x < distributions.size(); x++) {
+      // printf("p: %f\n", p);
+      for (size_t x = 0; x < distributions.size(); x++) {
         p -= weightedP[x];
         if (p <= 0) {
           pushCluster(x);
@@ -421,11 +405,28 @@ void PKMeans<T>::initClusters() {
     }
     if (!quiet) progressBar.show((k + 1.f) / kMax);
   }
+  weightedP.clear();
+  weightedSums.clear();
+  weightedP.resize(0);
+  weightedSums.resize(0);
   for (size_t x = 0; x < distributions.size(); x++) {
     clusterAssignments[getCluster(x)].emplace_back(x);
   }
   if (!quiet) printf("\n");
 }
+
+template <class T>
+void* PKMeans<T>::calcWeighted(void* args) {
+  ThreadArgs *threadArgs = (ThreadArgs *)args;
+  PKMeans *pkmeans = (PKMeans *)threadArgs->_this;
+  size_t i = size_t(threadArgs->start * pkmeans->threads.size() / pkmeans->distributions.size());
+  for (size_t x = threadArgs->start; x < threadArgs->end; x++) {
+    pkmeans->weightedP[x] = double(pkmeans->getLowerBounds(x, pkmeans->getCluster(x)));
+    pkmeans->weightedP[x] *= pkmeans->weightedP[x];
+    pkmeans->weightedSums[i] += pkmeans->weightedP[x];
+  }
+  pthread_exit(NULL);
+};
 
 template <class T>
 inline void PKMeans<T>::initNewClusters() {
@@ -500,7 +501,7 @@ void *PKMeans<T>::assignDistributionsThread(void *args) {
 
 template <class T>
 inline void PKMeans<T>::computeClusterMean(size_t c) {
-  if (clusterAssignments[c].size() == 0) return;
+  if (clusterAssignments[c].size() == 0) {return;}
   newClusters[c].fill(0.0);
   for (size_t i = 0; i < clusterAssignments[c].size(); i++) {
     newClusters[c] += distributions[clusterAssignments[c][i]];

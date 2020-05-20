@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 
 project(pkmeans)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1z")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-register")
 
 # Set up gtest. This must be set up before any subdirectories are
@@ -15,7 +15,7 @@ add_definitions("-fPIC")
 enable_testing()
 
 add_compile_options(-D_FORTIFY_SOURCE=2 -D_GLBICXX_ASSERTIONS
-    -fasynchronous-unwind-tables -fexceptions -fpie -fpic -fstack-protector -grecord-gcc-switches -O3 -pipe -std=c++14)
+    -fasynchronous-unwind-tables -fexceptions -fpie -fpic -fstack-protector -grecord-gcc-switches -O3 -pipe -std=c++17)
 
 #
 # set up boost

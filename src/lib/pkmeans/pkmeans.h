@@ -40,11 +40,13 @@ class PKMeans {
   std::vector<T> sDists;
   std::vector<pthread_t> threads;
   std::vector<ThreadArgs> threadArgs;
+  std::vector<double> weightedP;
+  std::vector<double> weightedSums;
   pthread_attr_t threadAttr;
   bool converged = false;
   bool quiet;
   size_t numClusters;
-  size_t denom = 1;
+  float denom = 1.f;
   size_t seed;
   size_t numObservedOnce;
   float maxMissingMass;
@@ -99,6 +101,7 @@ class PKMeans {
   static void* computeUpperBoundsThread(void* args);
   static void* initAssignmentsThread(void* args);
   static void* threadFnWrapper(void* args);
+  static void* calcWeighted(void* args);
 
   // test friend functions
   friend class PKMeansTests;
@@ -138,13 +141,15 @@ class PKMeans {
 
   template <typename U>
   static T emd(const Distribution<U>& d1, const Distribution<U>& d2,
-               size_t denom) {
+               float denom) {
     U sum = Distribution<U>::emd(d1, d2);
     constexpr T maxVal = std::numeric_limits<T>::max();
-    if (sizeof(T) < sizeof(U))
-      return (sum * maxVal) / denom;
-    else
+    if constexpr(sizeof(T) < sizeof(U)) {
+      return (fmin(sum, denom) / denom * maxVal);
+    }
+    else {
       return T(sum);
+    }
   };
 
   static T calcDist(const Distribution<T>& d1, const Distribution<T>& d2) {
