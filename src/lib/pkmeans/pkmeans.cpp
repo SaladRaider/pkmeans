@@ -130,8 +130,8 @@ void PKMeans<T>::runOnce(int numClusters, const std::string &assignmentsOut,
 }
 
 template <class T>
-void PKMeans<T>::markClustersObserved(float objError) {
-  size_t h = objError;
+void PKMeans<T>::markClustersObserved(double objError) {
+  size_t h = std::hash<double>()(objError);
   numObservedLocalMin[h] += 1;
   if (numObservedLocalMin[h] == 1)
     numObservedOnce += 1;
@@ -519,10 +519,12 @@ void *PKMeans<T>::computeNewClustersThread(void *args) {
 }
 
 template <class T>
-inline float PKMeans<T>::calcObjFn() {
-  float sum = 0.0;
+inline double PKMeans<T>::calcObjFn() {
+  double sum = 0.0;
+  double dist = 0.0;
   for (size_t x = 0; x < distributions.size(); x++) {
-    sum += PKMeans<float>::calcDist(distributions[x], clusters[getCluster(x)]);
+    dist = PKMeans<float>::calcDist(distributions[x], clusters[getCluster(x)]);
+    sum += dist*dist;
   }
   return sum;
 }
