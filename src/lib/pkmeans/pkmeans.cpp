@@ -176,13 +176,27 @@ void PKMeans<T>::reset() {
   }
   clusterLocks.clear();
   newClusterDists.clear();
-  for (size_t x = 0; x < distributions.size(); x++)
-    for (size_t c = 0; c < numClusters; c++) getLowerBounds(x, c) = 0;
+  if (threads.size() > 1) {
+    runThreads(distributions.size(), PKMeans<T>::resetLowerBoundsThread);
+  } else {
+    for (size_t x = 0; x < distributions.size(); x++)
+      for (size_t c = 0; c < numClusters; c++) getLowerBounds(x, c) = 0;
+  }
   upperBounds.clear();
   clusterDists.clear();
   sDists.clear();
   converged = false;
   if (!quiet) printf("done resetting run variables\n");
+}
+
+template <class T>
+void *PKMeans<T>::resetLowerBoundsThread(void *args) {
+  ThreadArgs *threadArgs = (ThreadArgs *)args;
+  PKMeans *pkmeans = (PKMeans *)threadArgs->_this;
+  for (size_t x = threadArgs->start; x < threadArgs->end; x++)
+    for (size_t c = 0; c < pkmeans->numClusters; c++)
+      pkmeans->getLowerBounds(x, c) = 0;
+  pthread_exit(NULL);
 }
 
 template <class T>
@@ -409,12 +423,14 @@ void PKMeans<T>::initClusters() {
 }
 
 template <class T>
-void* PKMeans<T>::calcWeighted(void* args) {
+void *PKMeans<T>::calcWeighted(void *args) {
   ThreadArgs *threadArgs = (ThreadArgs *)args;
   PKMeans *pkmeans = (PKMeans *)threadArgs->_this;
-  size_t i = size_t(threadArgs->start * pkmeans->threads.size() / pkmeans->distributions.size());
+  size_t i = size_t(threadArgs->start * pkmeans->threads.size() /
+                    pkmeans->distributions.size());
   for (size_t x = threadArgs->start; x < threadArgs->end; x++) {
-    pkmeans->weightedP[x] = double(pkmeans->getLowerBounds(x, pkmeans->getCluster(x)));
+    pkmeans->weightedP[x] =
+        double(pkmeans->getLowerBounds(x, pkmeans->getCluster(x)));
     pkmeans->weightedP[x] *= pkmeans->weightedP[x];
     pkmeans->weightedSums[i] += pkmeans->weightedP[x];
   }
@@ -510,11 +526,11 @@ void *PKMeans<T>::computeNewClustersThread(void *args) {
   ThreadArgs *threadArgs = (ThreadArgs *)args;
   PKMeans *pkmeans = (PKMeans *)threadArgs->_this;
   for (size_t x = threadArgs->start; x < threadArgs->end; x++) {
-      pthread_mutex_lock(&pkmeans->clusterLocks[pkmeans->getCluster(x)]);
-      pkmeans->newClusters[pkmeans->getCluster(x)] += pkmeans->distributions[x];
-      pkmeans->clusterSize[pkmeans->getCluster(x)] += 1;
-      pthread_mutex_unlock(&pkmeans->clusterLocks[pkmeans->getCluster(x)]);
-    }
+    pthread_mutex_lock(&pkmeans->clusterLocks[pkmeans->getCluster(x)]);
+    pkmeans->newClusters[pkmeans->getCluster(x)] += pkmeans->distributions[x];
+    pkmeans->clusterSize[pkmeans->getCluster(x)] += 1;
+    pthread_mutex_unlock(&pkmeans->clusterLocks[pkmeans->getCluster(x)]);
+  }
   pthread_exit(NULL);
 }
 
@@ -524,7 +540,7 @@ inline double PKMeans<T>::calcObjFn() {
   double dist = 0.0;
   for (size_t x = 0; x < distributions.size(); x++) {
     dist = PKMeans<float>::calcDist(distributions[x], clusters[getCluster(x)]);
-    sum += dist*dist;
+    sum += dist * dist;
   }
   return sum;
 }
