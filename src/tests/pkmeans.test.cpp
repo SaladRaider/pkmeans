@@ -679,7 +679,8 @@ TEST_F(PKMeansTests, CalcObjFn) {
   pkmeans.computeClusterDists();
   pkmeans.assignDistributions();
 
-  EXPECT_FLOAT_EQ(15.0, pkmeans.calcObjFn());
+  // 0*0+2*2+4*4+9*9=4+16+81=101
+  EXPECT_FLOAT_EQ(101.0f, pkmeans.calcObjFn());
 
   pkmeans.computeNewClusters();
   pkmeans.newClusters[0].fill(0.0);
@@ -693,7 +694,8 @@ TEST_F(PKMeansTests, CalcObjFn) {
   pkmeans.computeUpperBounds();
   pkmeans.assignNewClusters();
 
-  EXPECT_FLOAT_EQ(17.0, pkmeans.calcObjFn());
+  // 4*4+2*2+4*4+7*7=16+4+16+49=85
+  EXPECT_FLOAT_EQ(85.0f, pkmeans.calcObjFn());
 }
 
 }  // namespace pkmeans
