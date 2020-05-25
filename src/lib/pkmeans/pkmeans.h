@@ -102,6 +102,7 @@ class PKMeans {
   static void* threadFnWrapper(void* args);
   static void* calcWeighted(void* args);
   static void* resetLowerBoundsThread(void* args);
+  static void* calcObjFnThread(void* args);
 
   // test friend functions
   friend class PKMeansTests;
