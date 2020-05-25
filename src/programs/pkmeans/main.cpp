@@ -3,16 +3,20 @@
 #include <time.h>
 
 #include <boost/program_options.hpp>
+#include <cstdint>
 #include <iostream>
 #include <memory>
 #include <string>
-#include <cstdint>
 
 using namespace pkmeans;
 using namespace std;
 namespace po = boost::program_options;
 
 int main(int argc, char **argv) {
+  // Make I/O faster
+  ios_base::sync_with_stdio(false);
+  std::cin.tie(NULL);
+
   po::options_description desc(
       "pkmeans, a parallized k-means++ application using EMD.\n");
 
