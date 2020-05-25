@@ -296,6 +296,7 @@ void PKMeans<T>::readDistributions(const std::string &inFilename) {
         newDistribution.emplace_back(bucketVal);
         distributions.emplace_back(newDistribution);
         clusterMap.emplace_back(size_t(0));
+        r.push_back(true);
         newDistribution.clear();
         memset(floatStr, '\0', sizeof(char) * STR_SIZE);
         w = &floatStr[0];
@@ -316,6 +317,7 @@ void PKMeans<T>::readDistributions(const std::string &inFilename) {
   if (newDistribution.size() != 0) {
     distributions.emplace_back(newDistribution);
     clusterMap.emplace_back(size_t(0));
+    r.push_back(true);
   }
   printf("getting max distance...\n");
   float maxDist = 0.f;
@@ -449,7 +451,6 @@ inline void PKMeans<T>::initNewClusters() {
 template <class T>
 inline size_t PKMeans<T>::findClosestCluster(size_t x) {
   if (upperBounds[x] <= sDists[getCluster(x)]) return getCluster(x);
-  upperBounds[x] = computeDcDist(x, getCluster(x));
   for (size_t c = 0; c < clusters.size(); c++) {
     if (needsClusterUpdateApprox(x, c) && needsClusterUpdate(x, c)) {
       converged = false;
@@ -745,6 +746,7 @@ inline void PKMeans<T>::computeUpperBounds() {
   } else {
     for (size_t x = 0; x < distributions.size(); x++) {
       upperBounds[x] += newClusterDists[getCluster(x)];
+      r[x] = true;
     }
   }
 }
@@ -755,6 +757,7 @@ void *PKMeans<T>::computeUpperBoundsThread(void *args) {
   PKMeans *pkmeans = (PKMeans *)threadArgs->_this;
   for (size_t x = threadArgs->start; x < threadArgs->end; x++) {
     pkmeans->upperBounds[x] += pkmeans->newClusterDists[pkmeans->getCluster(x)];
+    pkmeans->r[x] = true;
   }
   pthread_exit(NULL);
 }
@@ -784,7 +787,13 @@ inline bool PKMeans<T>::needsClusterUpdateApprox(size_t x, size_t c) {
 
 template <class T>
 inline bool PKMeans<T>::needsClusterUpdate(size_t x, size_t c) {
-  return computeDcDist(x, c) < upperBounds[x];
+  if (r[x]) {
+    upperBounds[x] = computeDcDist(x, getCluster(x));
+    r[x] = false;
+  }
+  return (upperBounds[x] > getLowerBounds(x, c) ||
+          upperBounds[x] > 0.5 * cDist(getCluster(x), c)) &&
+         computeDcDist(x, c) < upperBounds[x];
 }
 
 template <class T>

@@ -44,6 +44,7 @@ class PKMeans {
   std::vector<std::vector<Distribution<float>>> newClusterSums;
   std::vector<std::vector<float>> clusterSizes;
   std::vector<size_t> clusterSize;
+  std::vector<bool> r;
   pthread_attr_t threadAttr;
   bool converged = false;
   bool quiet;
