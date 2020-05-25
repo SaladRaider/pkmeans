@@ -41,7 +41,8 @@ class PKMeans {
   std::vector<ThreadArgs> threadArgs;
   std::vector<double> weightedP;
   std::vector<double> weightedSums;
-  std::vector<pthread_mutex_t> clusterLocks;
+  std::vector<std::vector<Distribution<float>>> newClusterSums;
+  std::vector<std::vector<float>> clusterSizes;
   std::vector<size_t> clusterSize;
   pthread_attr_t threadAttr;
   bool converged = false;
