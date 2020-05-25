@@ -51,6 +51,7 @@ class PKMeans {
   size_t numClusters;
   float denom = 1.f;
   size_t seed;
+  int saveEvery;
   size_t numObservedOnce;
   float maxMissingMass;
   float confidenceProb;
@@ -133,8 +134,8 @@ class PKMeans {
 
  public:
   void run(int numClusters, int numThreads, float confidenceProb,
-           float maxMissingMass, size_t _seed, bool useTimeSeed,
-           const std::string& inFilename,
+           float maxMissingMass, size_t _seed, int backupEvery,
+           bool useTimeSeed, const std::string& inFilename,
            const std::string& assignmentsOutFilename,
            const std::string& clustersOutFilename, bool euclidean, bool quiet);
   void runOnce(int numClusters, const std::string& assignmentsOutFilename,
@@ -145,10 +146,9 @@ class PKMeans {
                float denom) {
     U sum = Distribution<U>::emd(d1, d2);
     constexpr T maxVal = std::numeric_limits<T>::max();
-    if constexpr(sizeof(T) < sizeof(U)) {
+    if constexpr (sizeof(T) < sizeof(U)) {
       return (fmin(sum, denom) / denom * maxVal);
-    }
-    else {
+    } else {
       return T(sum);
     }
   };

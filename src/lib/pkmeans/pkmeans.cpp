@@ -19,8 +19,8 @@ using namespace pkmeans;
 
 template <class T>
 void PKMeans<T>::run(int _numClusters, int numThreads, float _confidenceProb,
-                     float _maxMissingMass, size_t _seed, bool useTimeSeed,
-                     const std::string &inFilename,
+                     float _maxMissingMass, size_t _seed, int backupEvery,
+                     bool useTimeSeed, const std::string &inFilename,
                      const std::string &assignmentsOut,
                      const std::string &clustersOut, bool euclidean,
                      bool _quiet) {
@@ -33,11 +33,12 @@ void PKMeans<T>::run(int _numClusters, int numThreads, float _confidenceProb,
   Distribution<float>::euclidean = euclidean;
   quiet = _quiet;
   numClusters = _numClusters;
+  saveEvery = backupEvery;
   printf(
-      "Running pkmeans with args (k=%ld, t=%d, p=%f, m=%f, l=%s, s=%ld, i=%s, "
-      "a=%s, c=%s, e=%s, q=%s)\n",
+      "Running pkmeans with args (k=%ld, t=%d, p=%f, m=%f, l=%s, s=%ld, b=%d, "
+      "i=%s, a=%s, c=%s, e=%s, q=%s)\n",
       numClusters, numThreads, _confidenceProb, _maxMissingMass,
-      sizeof(T) == 1 ? "true" : "false", seed, inFilename.c_str(),
+      sizeof(T) == 1 ? "true" : "false", seed, saveEvery, inFilename.c_str(),
       assignmentsOut.c_str(), clustersOut.c_str(), euclidean ? "true" : "false",
       quiet ? "true" : "false");
 
@@ -75,7 +76,7 @@ void PKMeans<T>::runOnce(int numClusters, const std::string &assignmentsOut,
   srand(seed);
   if (!quiet) printf("Starting kmeans\n");
 
-  unsigned int numIterations = 1;
+  unsigned int numIterations = 0;
   if (!quiet) printf("\033[1minitializing centroids\033[0m\n");
   initClusters();
   if (!quiet) printf("done intializing centroids.\n");
@@ -92,6 +93,12 @@ void PKMeans<T>::runOnce(int numClusters, const std::string &assignmentsOut,
   auto prevError = objError;
   if (!quiet) printf("Error is %f\n", objError);
   while (!converged) {
+    if (saveEvery > 0 && numIterations % saveEvery == 0) {
+      if (!quiet) printf("\033[1msaving...\033[0m\n");
+      saveAssignments(assignmentsOut);
+      saveClusters(clustersOut);
+      if (!quiet) printf("\033[1mdone saving\033[0m\n");
+    }
     if (!quiet) printf("computing cluster dists...\n");
     computeClusterDists();
     if (!quiet) printf("assigning...\n");
@@ -106,7 +113,8 @@ void PKMeans<T>::runOnce(int numClusters, const std::string &assignmentsOut,
     assignNewClusters();
     objError = calcObjFn();
     if (!quiet) printf("Error is %f\n", objError);
-    if (!quiet) printf("%f%% improvement\n", (prevError - objError) / prevError * 100.f);
+    if (!quiet)
+      printf("%f%% improvement\n", (prevError - objError) / prevError * 100.f);
     prevError = objError;
     numIterations += 1;
     if (!quiet) printf("done with itteration %u\n", numIterations);
@@ -116,14 +124,14 @@ void PKMeans<T>::runOnce(int numClusters, const std::string &assignmentsOut,
   if (!quiet) printf("Error is %f\n", objError);
   if (objError < bestError) {
     bestError = objError;
-    saveAssignments(assignmentsOut);
-    saveClusters(clustersOut);
     if (quiet)
       printf("\nFound new best error: %f; seed: %ld; saving assignments...\n",
              bestError, seed);
     else
       printf("Found new best error: %f; seed: %ld; saving assignments...\n",
              bestError, seed);
+    saveAssignments(assignmentsOut);
+    saveClusters(clustersOut);
   }
   markClustersObserved(objError);
   if (!quiet) {
@@ -259,7 +267,7 @@ void PKMeans<T>::joinThreads() {
 template <class T>
 void PKMeans<T>::readDistributions(const std::string &inFilename) {
   distributions.clear();
-  constexpr auto BUFFER_SIZE = 16 * 1024;
+  constexpr auto BUFFER_SIZE = 4 * 1024 * 1024; // 4 MB
   constexpr auto STR_SIZE = 128;
   int fd = open(inFilename.c_str(), O_RDONLY);
   if (fd == -1) {
@@ -353,10 +361,15 @@ template <class T>
 void PKMeans<T>::saveAssignments(const std::string &outFilename) {
   std::ofstream f;
   f.open(outFilename);
+  auto progressBar = ProgressBar<50>();
+  constexpr int showEvery = 1024 * 1024 / (10 + 1 + 3 + 1);  // ~1 MB
   for (size_t x = 0; x < distributions.size(); x++) {
     f << x << ' ' << getCluster(x) << '\n';
+    if (showEvery < distributions.size() && x % showEvery == 0)
+      progressBar.show(float(x) / distributions.size());
   }
   f.close();
+  std::cout << '\n';
 }
 
 template <class T>
@@ -537,7 +550,8 @@ void *PKMeans<T>::computeNewClustersThread(void *args) {
     pkmeans->clusterSizes[tid][c] = 0.f;
   }
   for (size_t x = threadArgs->start; x < threadArgs->end; x++) {
-    pkmeans->newClusterSums[tid][pkmeans->getCluster(x)] += pkmeans->distributions[x];
+    pkmeans->newClusterSums[tid][pkmeans->getCluster(x)] +=
+        pkmeans->distributions[x];
     pkmeans->clusterSizes[tid][pkmeans->getCluster(x)] += 1;
   }
   pthread_exit(NULL);
@@ -555,7 +569,8 @@ inline double PKMeans<T>::calcObjFn() {
   } else {
     double dist = 0.0;
     for (size_t x = 0; x < distributions.size(); x++) {
-      dist = PKMeans<float>::calcDist(distributions[x], clusters[getCluster(x)]);
+      dist =
+          PKMeans<float>::calcDist(distributions[x], clusters[getCluster(x)]);
       sum += dist * dist;
     }
   }
